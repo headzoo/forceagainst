@@ -408,11 +408,25 @@ footer>div { display:flex; justify-content:flex-end; gap:22px; font-size:11px; t
 .government-roster-empty { padding:34px 28px; border:2px solid var(--ink); background:white; box-shadow:7px 7px 0 var(--red); }
 .government-roster-empty h3 { margin:0 0 10px; font-size:24px; text-transform:uppercase; }
 .government-roster-empty p { margin:0; max-width:620px; font-size:16px; font-weight:700; line-height:1.55; }
+.government-roster-layout { display:grid; grid-template-columns:240px minmax(0,1fr); gap:42px; align-items:start; }
+.government-roster-nav { position:sticky; top:16px; max-height:calc(100vh - 32px); overflow:auto; padding:22px 18px; border:2px solid var(--ink); background:white; box-shadow:6px 6px 0 var(--ink); }
+.government-roster-nav .eyebrow { margin-bottom:18px; }
+.government-roster-nav-chamber + .government-roster-nav-chamber { margin-top:22px; padding-top:18px; border-top:1.5px solid var(--line); }
+.government-roster-nav-chamber-link { display:block; margin-bottom:10px; color:var(--ink); font-size:12px; font-weight:950; letter-spacing:.08em; text-decoration:none; text-transform:uppercase; }
+.government-roster-nav-chamber-link:hover, .government-roster-nav-chamber-link:focus-visible { color:var(--red); }
+.government-roster-nav-states { margin:0; padding:0; list-style:none; display:grid; gap:2px; }
+.government-roster-nav-states a { display:block; padding:7px 8px; color:var(--ink); font-size:13px; font-weight:800; line-height:1.25; text-decoration:none; }
+.government-roster-nav-states a:hover, .government-roster-nav-states a:focus-visible { background:var(--ink); color:var(--paper); }
+.government-roster-nav-state-abbr { display:none; }
+.government-roster-main { min-width:0; }
+.government-roster-section { scroll-margin-top:24px; }
 .government-roster-section + .government-roster-section { margin-top:70px; padding-top:70px; border-top:2px solid var(--line); }
 .government-roster-heading { margin-bottom:34px; }
-.government-roster-heading h2 { margin:0; font-size:clamp(38px,5vw,64px); line-height:.9; letter-spacing:-.06em; text-transform:uppercase; }
+.government-roster-heading h2 { margin:0; font-size:clamp(38px,5vw,64px); line-height:.9; letter-spacing:-.06em; text-transform:uppercase; scroll-margin-top:24px; }
 .government-roster-heading>p:not(.eyebrow) { max-width:680px; margin:18px 0 0; font-size:16px; font-weight:650; line-height:1.55; }
 .government-roster-groups { display:grid; gap:42px; }
+.government-state-group { scroll-margin-top:24px; padding:8px; margin:-8px; }
+.government-state-group:target { background:#fff0f1; outline:2px solid var(--red); }
 .government-state-group h3 { margin:0 0 18px; font-size:22px; letter-spacing:-.03em; text-transform:uppercase; }
 .congress-member-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:22px; width:100%; }
 .congress-member-card { display:grid; grid-template-columns:112px minmax(0,1fr); gap:16px; height:100%; padding:20px; border:2px solid var(--ink); background:white; color:var(--ink); box-shadow:6px 6px 0 var(--ink); min-width:0; }
@@ -511,6 +525,12 @@ footer>div { display:flex; justify-content:flex-end; gap:22px; font-size:11px; t
   .government-heading .back-link { margin-bottom:48px; }
   .government-finder-panel { padding:55px 20px 70px; }
   .government-roster-shell { padding:65px 20px 80px; }
+  .government-roster-layout { grid-template-columns:1fr; gap:28px; }
+  .government-roster-nav { position:static; max-height:none; overflow:visible; }
+  .government-roster-nav-states { grid-template-columns:repeat(auto-fill,minmax(44px,1fr)); gap:6px; }
+  .government-roster-nav-states a { display:flex; align-items:center; justify-content:center; min-height:40px; padding:0; border:1.5px solid var(--ink); font-size:12px; font-weight:950; letter-spacing:.04em; }
+  .government-roster-nav-state-full { display:none; }
+  .government-roster-nav-state-abbr { display:inline; }
   .congress-member-card, .congress-member-card:not(:has(.congress-member-photo)) { grid-template-columns:1fr; }
 }
 @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } * { transition:none !important; } .issue-option-placeholder::after { animation:none; transform:none; } }

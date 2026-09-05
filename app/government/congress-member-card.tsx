@@ -10,19 +10,7 @@ import {
 } from '@fortawesome/free-brands-svg-icons';
 import type { PublicCongressMember } from '@/lib/db';
 import { stripHtmlToText } from '@/lib/plain-text';
-
-const STATE_NAMES: Record<string, string> = {
-  AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California', CO: 'Colorado',
-  CT: 'Connecticut', DE: 'Delaware', FL: 'Florida', GA: 'Georgia', HI: 'Hawaii', ID: 'Idaho',
-  IL: 'Illinois', IN: 'Indiana', IA: 'Iowa', KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana',
-  ME: 'Maine', MD: 'Maryland', MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota', MS: 'Mississippi',
-  MO: 'Missouri', MT: 'Montana', NE: 'Nebraska', NV: 'Nevada', NH: 'New Hampshire', NJ: 'New Jersey',
-  NM: 'New Mexico', NY: 'New York', NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio', OK: 'Oklahoma',
-  OR: 'Oregon', PA: 'Pennsylvania', RI: 'Rhode Island', SC: 'South Carolina', SD: 'South Dakota',
-  TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont', VA: 'Virginia', WA: 'Washington',
-  WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming', DC: 'District of Columbia', AS: 'American Samoa',
-  GU: 'Guam', MP: 'Northern Mariana Islands', PR: 'Puerto Rico', VI: 'U.S. Virgin Islands',
-};
+import { stateHeading } from '@/lib/us-states';
 
 const SOCIAL_ICONS: Record<string, { icon: IconDefinition; label: string }> = {
   twitter: { icon: faXTwitter, label: 'X' },
@@ -32,19 +20,15 @@ const SOCIAL_ICONS: Record<string, { icon: IconDefinition; label: string }> = {
   tiktok: { icon: faTiktok, label: 'TikTok' },
 };
 
-function stateLabel(state: string) {
-  return STATE_NAMES[state] ? `${STATE_NAMES[state]} (${state})` : state;
-}
-
 function districtText(member: PublicCongressMember) {
   if (member.chamber === 'senate') {
     if (member.senateClass != null) return `Class ${member.senateClass}`;
-    return stateLabel(member.state);
+    return stateHeading(member.state);
   }
 
-  if (member.district === 0) return `${stateLabel(member.state)} · At-large`;
-  if (member.district != null) return `${stateLabel(member.state)} · District ${member.district}`;
-  return stateLabel(member.state);
+  if (member.district === 0) return `${stateHeading(member.state)} · At-large`;
+  if (member.district != null) return `${stateHeading(member.state)} · District ${member.district}`;
+  return stateHeading(member.state);
 }
 
 function socialUrl(platform: string, value: string) {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { normalizeStreetAddress } from '@/lib/civic-district';
 import type { PublicCongressMember } from '@/lib/db';
 import {
   createPlacesSessionToken,
@@ -11,6 +12,8 @@ import {
 import { mergeSuggestionWithPlace, type PlaceSuggestion } from '@/lib/places-address';
 import { CongressMemberCard } from './congress-member-card';
 
+const GOVERNMENT_LOOKUP_STORAGE_KEY = 'forceAgainstSomething:governmentLookup';
+
 type RepresentativesResult = {
   jurisdiction: { state: string; district: number };
   districtLabel: string;
@@ -20,9 +23,86 @@ type RepresentativesResult = {
   houseVacant: boolean;
 };
 
+type StoredGovernmentLookup = {
+  address: string;
+  result: RepresentativesResult;
+};
+
+function isPublicCongressMember(value: unknown): value is PublicCongressMember {
+  if (!value || typeof value !== 'object') return false;
+  const member = value as Record<string, unknown>;
+  return typeof member.bioguideId === 'string'
+    && typeof member.officialFullName === 'string'
+    && typeof member.displayTitle === 'string'
+    && typeof member.state === 'string';
+}
+
+function isRepresentativesResult(value: unknown): value is RepresentativesResult {
+  if (!value || typeof value !== 'object') return false;
+
+  const result = value as Record<string, unknown>;
+  const jurisdiction = result.jurisdiction;
+  if (!jurisdiction || typeof jurisdiction !== 'object') return false;
+
+  const { state, district } = jurisdiction as Record<string, unknown>;
+  if (typeof state !== 'string' || typeof district !== 'number' || !Number.isFinite(district)) return false;
+  if (typeof result.districtLabel !== 'string') return false;
+  if (typeof result.senateApplies !== 'boolean' || typeof result.houseVacant !== 'boolean') return false;
+  if (!Array.isArray(result.senators) || !result.senators.every(isPublicCongressMember)) return false;
+  if (result.representative !== null && !isPublicCongressMember(result.representative)) return false;
+
+  return true;
+}
+
+function readStoredGovernmentLookup(): StoredGovernmentLookup | null {
+  try {
+    const raw = window.localStorage.getItem(GOVERNMENT_LOOKUP_STORAGE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== 'object') {
+      window.localStorage.removeItem(GOVERNMENT_LOOKUP_STORAGE_KEY);
+      return null;
+    }
+
+    const payload = parsed as Record<string, unknown>;
+    const address = normalizeStreetAddress(payload.address);
+    if (!address || !isRepresentativesResult(payload.result)) {
+      window.localStorage.removeItem(GOVERNMENT_LOOKUP_STORAGE_KEY);
+      return null;
+    }
+
+    return { address, result: payload.result };
+  } catch {
+    try {
+      window.localStorage.removeItem(GOVERNMENT_LOOKUP_STORAGE_KEY);
+    } catch {
+      // Ignore storage failures when browser storage is restricted.
+    }
+    return null;
+  }
+}
+
+function writeStoredGovernmentLookup(address: string, result: RepresentativesResult) {
+  try {
+    window.localStorage.setItem(GOVERNMENT_LOOKUP_STORAGE_KEY, JSON.stringify({ address, result }));
+  } catch {
+    // Ignore storage failures so lookup still works when browser storage is restricted.
+  }
+}
+
+function clearStoredGovernmentLookup() {
+  try {
+    window.localStorage.removeItem(GOVERNMENT_LOOKUP_STORAGE_KEY);
+  } catch {
+    // Ignore storage failures when browser storage is restricted.
+  }
+}
+
 export function FindRepresentatives() {
   const listId = useId();
   const comboboxRef = useRef<HTMLDivElement>(null);
+  const addressInputRef = useRef<HTMLInputElement>(null);
   const filledAddressRef = useRef('');
   const sessionTokenRef = useRef(createPlacesSessionToken());
   const requestIdRef = useRef(0);
@@ -35,12 +115,29 @@ export function FindRepresentatives() {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [resolvingPlace, setResolvingPlace] = useState(false);
+  const [restored, setRestored] = useState(false);
 
   const placesEnabled = hasPlacesAutocomplete();
-  const showSuggestions = placesEnabled && open && suggestions.length > 0;
+  const locked = status === 'success' && result !== null;
+  const showSuggestions = placesEnabled && !locked && open && suggestions.length > 0;
 
   useEffect(() => {
-    if (!placesEnabled) return;
+    const stored = readStoredGovernmentLookup();
+    if (stored) {
+      filledAddressRef.current = stored.address;
+      setAddress(stored.address);
+      setResult(stored.result);
+      setStatus('success');
+      setError('');
+      setSuggestions([]);
+      setOpen(false);
+      setActiveIndex(-1);
+    }
+    setRestored(true);
+  }, []);
+
+  useEffect(() => {
+    if (!placesEnabled || locked) return;
 
     function onPointerDown(event: PointerEvent) {
       if (!comboboxRef.current?.contains(event.target as Node)) {
@@ -51,10 +148,10 @@ export function FindRepresentatives() {
 
     document.addEventListener('pointerdown', onPointerDown);
     return () => document.removeEventListener('pointerdown', onPointerDown);
-  }, [placesEnabled]);
+  }, [placesEnabled, locked]);
 
   useEffect(() => {
-    if (!placesEnabled) return;
+    if (!placesEnabled || locked || !restored) return;
 
     const query = address.trim();
     if (query.length < 3 || query === filledAddressRef.current) {
@@ -85,7 +182,7 @@ export function FindRepresentatives() {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [address, placesEnabled]);
+  }, [address, placesEnabled, locked, restored]);
 
   async function selectSuggestion(suggestion: PlaceSuggestion) {
     setResolvingPlace(true);
@@ -146,9 +243,25 @@ export function FindRepresentatives() {
     }
   }
 
+  function clearAddress() {
+    clearStoredGovernmentLookup();
+    requestIdRef.current += 1;
+    filledAddressRef.current = '';
+    sessionTokenRef.current = createPlacesSessionToken();
+    setAddress('');
+    setResult(null);
+    setStatus('idle');
+    setError('');
+    setSuggestions([]);
+    setOpen(false);
+    setActiveIndex(-1);
+    setResolvingPlace(false);
+    window.requestAnimationFrame(() => addressInputRef.current?.focus());
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (resolvingPlace) return;
+    if (resolvingPlace || locked) return;
     const requestId = ++requestIdRef.current;
 
     setStatus('loading');
@@ -172,7 +285,12 @@ export function FindRepresentatives() {
         return;
       }
 
-      setResult(body as RepresentativesResult);
+      const nextResult = body as RepresentativesResult;
+      const savedAddress = normalizeStreetAddress(address) ?? address.trim();
+      writeStoredGovernmentLookup(savedAddress, nextResult);
+      filledAddressRef.current = savedAddress;
+      setAddress(savedAddress);
+      setResult(nextResult);
       setStatus('success');
     } catch {
       if (requestId !== requestIdRef.current) return;
@@ -195,13 +313,14 @@ export function FindRepresentatives() {
           <div className="government-address-combobox" ref={comboboxRef}>
             <input
               id="government-address"
+              ref={addressInputRef}
               name="address"
               type="text"
-              role={placesEnabled ? 'combobox' : undefined}
+              role={placesEnabled && !locked ? 'combobox' : undefined}
               autoComplete={placesEnabled ? 'off' : 'street-address'}
-              aria-autocomplete={placesEnabled ? 'list' : undefined}
-              aria-controls={placesEnabled ? listId : undefined}
-              aria-expanded={placesEnabled ? showSuggestions : undefined}
+              aria-autocomplete={placesEnabled && !locked ? 'list' : undefined}
+              aria-controls={placesEnabled && !locked ? listId : undefined}
+              aria-expanded={placesEnabled && !locked ? showSuggestions : undefined}
               aria-activedescendant={showSuggestions && activeIndex >= 0 ? `${listId}-option-${activeIndex}` : undefined}
               value={address}
               onChange={(event) => {
@@ -210,13 +329,13 @@ export function FindRepresentatives() {
                 if (placesEnabled) setOpen(true);
               }}
               onFocus={() => {
-                if (placesEnabled && suggestions.length > 0) setOpen(true);
+                if (placesEnabled && !locked && suggestions.length > 0) setOpen(true);
               }}
               onKeyDown={onAddressKeyDown}
               placeholder="123 Main St, Springfield, IL 62701"
               required
               aria-describedby="government-address-help"
-              disabled={status === 'loading' || resolvingPlace}
+              disabled={locked || status === 'loading' || resolvingPlace}
             />
             {showSuggestions && (
               <ul className="government-address-panel" id={listId} role="listbox">
@@ -244,9 +363,15 @@ export function FindRepresentatives() {
           Include street number, street name, city, state, and ZIP. Start typing to search suggested U.S. street addresses. PO boxes and ZIP-only lookups cannot be matched to a district.
         </p>
 
-        <button className="form-submit" type="submit" disabled={status === 'loading' || resolvingPlace || !address.trim()} aria-busy={status === 'loading' || resolvingPlace}>
-          {status === 'loading' ? 'LOOKING UP DISTRICT' : 'FIND REPRESENTATIVES'} <span aria-hidden="true">→</span>
-        </button>
+        {locked ? (
+          <button className="form-submit" type="button" onClick={clearAddress}>
+            CLEAR ADDRESS <span aria-hidden="true">→</span>
+          </button>
+        ) : (
+          <button className="form-submit" type="submit" disabled={status === 'loading' || resolvingPlace || !address.trim()} aria-busy={status === 'loading' || resolvingPlace}>
+            {status === 'loading' ? 'LOOKING UP DISTRICT' : 'FIND REPRESENTATIVES'} <span aria-hidden="true">→</span>
+          </button>
+        )}
       </form>
 
       <div className="government-finder-status" aria-live="polite" aria-atomic="true">

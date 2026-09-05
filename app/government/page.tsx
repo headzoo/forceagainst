@@ -3,8 +3,10 @@ import Link from 'next/link';
 import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
 import { getCurrentCongressMembers, type PublicCongressMember } from '@/lib/db';
+import { stateHeading } from '@/lib/us-states';
 import { CongressMemberCard } from './congress-member-card';
 import { FindRepresentatives } from './find-representatives';
+import { GovernmentRosterNav } from './government-roster-nav';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,19 +27,6 @@ export const metadata: Metadata = {
   },
 };
 
-const STATE_NAMES: Record<string, string> = {
-  AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California', CO: 'Colorado',
-  CT: 'Connecticut', DE: 'Delaware', FL: 'Florida', GA: 'Georgia', HI: 'Hawaii', ID: 'Idaho',
-  IL: 'Illinois', IN: 'Indiana', IA: 'Iowa', KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana',
-  ME: 'Maine', MD: 'Maryland', MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota', MS: 'Mississippi',
-  MO: 'Missouri', MT: 'Montana', NE: 'Nebraska', NV: 'Nevada', NH: 'New Hampshire', NJ: 'New Jersey',
-  NM: 'New Mexico', NY: 'New York', NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio', OK: 'Oklahoma',
-  OR: 'Oregon', PA: 'Pennsylvania', RI: 'Rhode Island', SC: 'South Carolina', SD: 'South Dakota',
-  TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont', VA: 'Virginia', WA: 'Washington',
-  WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming', DC: 'District of Columbia', AS: 'American Samoa',
-  GU: 'Guam', MP: 'Northern Mariana Islands', PR: 'Puerto Rico', VI: 'U.S. Virgin Islands',
-};
-
 function groupByState(members: PublicCongressMember[]) {
   const groups = new Map<string, PublicCongressMember[]>();
 
@@ -50,34 +39,35 @@ function groupByState(members: PublicCongressMember[]) {
   return [...groups.entries()].sort(([left], [right]) => left.localeCompare(right));
 }
 
-function stateHeading(state: string) {
-  return STATE_NAMES[state] ? `${STATE_NAMES[state]} (${state})` : state;
-}
-
 function RosterSection({
+  id,
   title,
+  chamberPrefix,
   members,
   note,
 }: {
+  id: string;
   title: string;
+  chamberPrefix: 'senate' | 'house';
   members: PublicCongressMember[];
   note?: string;
 }) {
   if (members.length === 0) return null;
 
   const grouped = groupByState(members);
+  const headingId = `${id}-heading`;
 
   return (
-    <section className="government-roster-section" aria-labelledby={`${title.replace(/\s+/g, '-').toLowerCase()}-heading`}>
+    <section className="government-roster-section" id={id} aria-labelledby={headingId}>
       <div className="government-roster-heading">
         <p className="eyebrow"><span /> CURRENT ROSTER</p>
-        <h2 id={`${title.replace(/\s+/g, '-').toLowerCase()}-heading`}>{title}</h2>
+        <h2 id={headingId}>{title}</h2>
         {note && <p>{note}</p>}
       </div>
 
       <div className="government-roster-groups">
         {grouped.map(([state, stateMembers]) => (
-          <div className="government-state-group" key={state}>
+          <div className="government-state-group" id={`${chamberPrefix}-${state.toLowerCase()}`} key={state}>
             <h3>{stateHeading(state)}</h3>
             <div className="congress-member-grid">
               {stateMembers.map((member) => (
@@ -95,6 +85,8 @@ export default async function GovernmentPage() {
   const members = await getCurrentCongressMembers();
   const senators = members.filter((member) => member.chamber === 'senate');
   const representatives = members.filter((member) => member.chamber === 'house');
+  const senateStates = groupByState(senators).map(([state]) => state);
+  const houseStates = groupByState(representatives).map(([state]) => state);
 
   return (
     <main className="government-page">
@@ -129,14 +121,24 @@ export default async function GovernmentPage() {
             </p>
           </div>
         ) : (
-          <>
-            <RosterSection title="U.S. Senate" members={senators} />
-            <RosterSection
-              title="U.S. House"
-              members={representatives}
-              note="Includes voting representatives, delegates, and the resident commissioner for Puerto Rico."
+          <div className="government-roster-layout">
+            <GovernmentRosterNav
+              chambers={[
+                { id: 'us-senate', title: 'U.S. Senate', prefix: 'senate', states: senateStates },
+                { id: 'us-house', title: 'U.S. House', prefix: 'house', states: houseStates },
+              ]}
             />
-          </>
+            <div className="government-roster-main">
+              <RosterSection id="us-senate" title="U.S. Senate" chamberPrefix="senate" members={senators} />
+              <RosterSection
+                id="us-house"
+                title="U.S. House"
+                chamberPrefix="house"
+                members={representatives}
+                note="Includes voting representatives, delegates, and the resident commissioner for Puerto Rico."
+              />
+            </div>
+          </div>
         )}
       </section>
 
