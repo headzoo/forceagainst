@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { bigint, bigserial, boolean, customType, index, integer, pgEnum, pgTable, primaryKey, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import { bigint, bigserial, boolean, customType, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import { user } from './auth-schema';
 
 export * from './auth-schema';
@@ -12,6 +12,29 @@ const tsvector = customType<{ data: string }>({
 
 export const issueStatus = pgEnum('issue_status', ['active', 'planned']);
 export const actionType = pgEnum('action_type', ['Petition', 'Lawsuit', 'Campaign']);
+export const congressChamber = pgEnum('congress_chamber', ['house', 'senate']);
+
+export type CongressDistrictOffice = {
+  id?: string;
+  address?: string;
+  building?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  phone?: string;
+  fax?: string;
+  hours?: string;
+  latitude?: number;
+  longitude?: number;
+};
+
+export type CongressMemberSocialHandles = {
+  twitter?: string;
+  facebook?: string;
+  youtube?: string;
+  instagram?: string;
+  tiktok?: string;
+};
 
 export const issues = pgTable('issues', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
@@ -94,7 +117,56 @@ export const actionLikes = pgTable('action_likes', {
   index('action_likes_action_idx').on(table.actionId),
 ]);
 
+export const congressMembers = pgTable('congress_members', {
+  bioguideId: text('bioguide_id').primaryKey(),
+  firstName: text('first_name').notNull(),
+  middleName: text('middle_name'),
+  lastName: text('last_name').notNull(),
+  suffix: text('suffix'),
+  nickname: text('nickname'),
+  officialFullName: text('official_full_name').notNull(),
+  party: text('party').notNull(),
+  chamber: congressChamber('chamber').notNull(),
+  state: text('state').notNull(),
+  district: integer('district'),
+  senateClass: integer('senate_class'),
+  senateRank: integer('senate_rank'),
+  displayTitle: text('display_title').notNull(),
+  officialWebsite: text('official_website'),
+  contactFormUrl: text('contact_form_url'),
+  capitolPhone: text('capitol_phone'),
+  capitolOffice: text('capitol_office'),
+  mailingAddress: text('mailing_address'),
+  congressGovProfileUrl: text('congress_gov_profile_url'),
+  officialImageUrl: text('official_image_url'),
+  officialImageAttribution: text('official_image_attribution'),
+  officialSocialHandles: jsonb('official_social_handles').$type<CongressMemberSocialHandles>(),
+  districtOffices: jsonb('district_offices').$type<CongressDistrictOffice[]>(),
+  isCurrent: boolean('is_current').notNull().default(true),
+  providerUpdatedAt: timestamp('provider_updated_at', { withTimezone: true }),
+  syncedAt: timestamp('synced_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('congress_members_current_chamber_state_district_idx').on(
+    table.isCurrent,
+    table.chamber,
+    table.state,
+    table.district,
+  ),
+  index('congress_members_current_state_idx').on(table.isCurrent, table.state),
+  index('congress_members_current_roster_sort_idx').on(
+    table.isCurrent,
+    table.chamber,
+    table.state,
+    table.district,
+    table.senateClass,
+    table.lastName,
+    table.firstName,
+  ),
+]);
+
 export type Issue = typeof issues.$inferSelect;
 export type Organization = typeof orgs.$inferSelect;
 export type ActionRecord = typeof actions.$inferSelect;
 export type ActionLike = typeof actionLikes.$inferSelect;
+export type CongressMember = typeof congressMembers.$inferSelect;
+export type CongressMemberInsert = typeof congressMembers.$inferInsert;

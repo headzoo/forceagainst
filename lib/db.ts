@@ -2,9 +2,27 @@ import { neon } from '@neondatabase/serverless';
 import { and, asc, desc, eq, exists, getTableColumns, gte, isNull, lte, or, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from '@/db/schema';
-import { actionLikes, actions, issues, orgs, type ActionRecord, type Issue } from '@/db/schema';
+import {
+  actionLikes,
+  actions,
+  congressMembers,
+  issues,
+  orgs,
+  type ActionRecord,
+  type CongressDistrictOffice,
+  type CongressMember,
+  type CongressMemberSocialHandles,
+  type Issue,
+} from '@/db/schema';
 
-export type { ActionRecord, Issue, Organization } from '@/db/schema';
+export type {
+  ActionRecord,
+  CongressDistrictOffice,
+  CongressMember,
+  CongressMemberSocialHandles,
+  Issue,
+  Organization,
+} from '@/db/schema';
 
 const { searchTsv: _actionsSearchTsv, ...actionColumns } = getTableColumns(actions);
 void _actionsSearchTsv;
@@ -48,6 +66,38 @@ export type SearchResults = {
   organizations: SearchOrganizationResult[];
 };
 
+export type PublicCongressMember = {
+  bioguideId: string;
+  firstName: string;
+  middleName: string | null;
+  lastName: string;
+  suffix: string | null;
+  nickname: string | null;
+  officialFullName: string;
+  party: string;
+  chamber: CongressMember['chamber'];
+  state: string;
+  district: number | null;
+  senateClass: number | null;
+  senateRank: number | null;
+  displayTitle: string;
+  officialWebsite: string | null;
+  contactFormUrl: string | null;
+  capitolPhone: string | null;
+  capitolOffice: string | null;
+  mailingAddress: string | null;
+  congressGovProfileUrl: string | null;
+  officialImageUrl: string | null;
+  officialImageAttribution: string | null;
+  officialSocialHandles: CongressMemberSocialHandles | null;
+  districtOffices: CongressDistrictOffice[] | null;
+};
+
+export type CongressMembersByJurisdiction = {
+  senators: PublicCongressMember[];
+  representative: PublicCongressMember | null;
+};
+
 const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
@@ -55,6 +105,92 @@ if (!connectionString) {
 }
 
 export const db = drizzle(neon(connectionString), { schema });
+
+const congressMemberPublicColumns = {
+  bioguideId: congressMembers.bioguideId,
+  firstName: congressMembers.firstName,
+  middleName: congressMembers.middleName,
+  lastName: congressMembers.lastName,
+  suffix: congressMembers.suffix,
+  nickname: congressMembers.nickname,
+  officialFullName: congressMembers.officialFullName,
+  party: congressMembers.party,
+  chamber: congressMembers.chamber,
+  state: congressMembers.state,
+  district: congressMembers.district,
+  senateClass: congressMembers.senateClass,
+  senateRank: congressMembers.senateRank,
+  displayTitle: congressMembers.displayTitle,
+  officialWebsite: congressMembers.officialWebsite,
+  contactFormUrl: congressMembers.contactFormUrl,
+  capitolPhone: congressMembers.capitolPhone,
+  capitolOffice: congressMembers.capitolOffice,
+  mailingAddress: congressMembers.mailingAddress,
+  congressGovProfileUrl: congressMembers.congressGovProfileUrl,
+  officialImageUrl: congressMembers.officialImageUrl,
+  officialImageAttribution: congressMembers.officialImageAttribution,
+  officialSocialHandles: congressMembers.officialSocialHandles,
+  districtOffices: congressMembers.districtOffices,
+};
+
+function currentCongressMemberCondition() {
+  return eq(congressMembers.isCurrent, true);
+}
+
+const congressChamberSortOrder = sql<number>`CASE ${congressMembers.chamber} WHEN 'senate' THEN 0 ELSE 1 END`;
+
+export async function getCurrentCongressMembers(): Promise<PublicCongressMember[]> {
+  return db
+    .select(congressMemberPublicColumns)
+    .from(congressMembers)
+    .where(currentCongressMemberCondition())
+    .orderBy(
+      asc(congressChamberSortOrder),
+      asc(congressMembers.state),
+      asc(congressMembers.district),
+      asc(congressMembers.senateClass),
+      asc(congressMembers.senateRank),
+      asc(congressMembers.lastName),
+      asc(congressMembers.firstName),
+    );
+}
+
+export async function getCongressMembersByJurisdiction(
+  state: string,
+  district: number,
+): Promise<CongressMembersByJurisdiction> {
+  const [senators, houseMembers] = await Promise.all([
+    db
+      .select(congressMemberPublicColumns)
+      .from(congressMembers)
+      .where(and(
+        currentCongressMemberCondition(),
+        eq(congressMembers.chamber, 'senate'),
+        eq(congressMembers.state, state),
+      ))
+      .orderBy(
+        asc(congressMembers.senateRank),
+        asc(congressMembers.senateClass),
+        asc(congressMembers.lastName),
+        asc(congressMembers.firstName),
+      ),
+    db
+      .select(congressMemberPublicColumns)
+      .from(congressMembers)
+      .where(and(
+        currentCongressMemberCondition(),
+        eq(congressMembers.chamber, 'house'),
+        eq(congressMembers.state, state),
+        eq(congressMembers.district, district),
+      ))
+      .limit(1),
+  ]);
+
+  return {
+    senators,
+    representative: houseMembers[0] ?? null,
+  };
+}
 
 export function publicActionVisibilityCondition() {
   const now = sql<Date>`now()`;

@@ -7,6 +7,7 @@ import ctaImage from '@/assets/cta.jpg';
 import type { DirectoryAction, Issue } from '@/lib/db';
 import { authClient } from '@/lib/auth-client';
 import { LikeButton } from './action-like-button';
+import { SiteFooter } from './site-footer';
 import { SiteHeader } from './site-header';
 
 type ActionType = DirectoryAction['type'];
@@ -218,7 +219,7 @@ export function ActionsDirectory({ issues, actions }: { issues: Issue[]; actions
       )}
 
       <section className="trust-band"><div className="trust-mark" aria-hidden="true"><span>✓</span></div><div><p className="eyebrow"><span /> OUR STANDARD</p><h2>Curated for action,<br />not attention.</h2></div><p>We prioritize credible organizations, active efforts, transparent asks, and direct links. No outrage bait. No pay-to-play placement. Just useful ways to help.</p></section>
-      <footer><a className="brand footer-brand" href="#top" aria-label="Force Against Something home"><Image src="/footer-wordmark-star.png" alt="Force Against Something" width={620} height={99} unoptimized /></a><p>Pick an issue. Do your part.</p><div><Link href="/contact">Contact</Link><Link href="/api">API</Link><Link href="/submit">Submit an action</Link></div></footer>
+      <SiteFooter homeBrandTarget="#top" />
     </main>
   );
 }

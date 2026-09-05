@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/discover-actions",
       "schedule": "0 5 * * 0"
+    },
+    {
+      "path": "/api/cron/sync-congress",
+      "schedule": "0 4 * * *"
     }
   ]
 }

@@ -14,8 +14,13 @@ export function AuthControl() {
   const [error, setError] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [ready, setReady] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+
+  useEffect(() => {
+    setReady(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -87,7 +92,7 @@ export function AuthControl() {
     setOpen(false);
   }
 
-  if (sessionPending) {
+  if (!ready || sessionPending) {
     return <span className="auth-loading" aria-label="Checking account status" />;
   }
 

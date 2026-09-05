@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ActionLikeButton } from '@/app/action-like-button';
+import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
 import { getPublishedActionBySlugs } from '@/lib/db';
 
@@ -123,7 +124,7 @@ export default async function ActionPage({ params }: ActionPageProps) {
         </article>
       </section>
 
-      <footer><Link className="brand footer-brand" href="/" aria-label="Force Against Something home"><Image src="/footer-wordmark-star.png" alt="Force Against Something" width={620} height={99} unoptimized /></Link><p>Pick an issue. Do your part.</p><div><Link href="/contact">Contact</Link><Link href="/api">API</Link><Link href="/submit">Submit an action</Link></div></footer>
+      <SiteFooter />
     </main>
   );
 }

@@ -26,7 +26,7 @@ This project requires Node.js 22.13 or newer and a PostgreSQL database.
 1. Install dependencies:
 
    ```bash
-   npm install
+   pnpm install
    ```
 
 2. Copy `.env.example` to `.env.local` and provide database, authentication, and admin settings:
@@ -38,13 +38,13 @@ This project requires Node.js 22.13 or newer and a PostgreSQL database.
 3. Apply the database migrations:
 
    ```bash
-   npm run db:migrate
+   pnpm run db:migrate
    ```
 
 4. Start the development server:
 
    ```bash
-   npm run dev
+   pnpm run dev
    ```
 
 Open site [http://localhost:3000](http://localhost:3000) in your browser.
@@ -64,20 +64,34 @@ The action discovery job searches the web once for each issue and adds genuinely
 Set `OPENAI_API_KEY` in `.env.local`, then run:
 
 ```bash
-npm run actions:discover
+pnpm run actions:discover
 ```
 
 Useful local options are `--dry-run`, `--issue=<slug>`, and `--max=<count>`. A dry run searches and reports candidates without changing the database.
 
 Production uses the secured `/api/cron/discover-actions` route and the weekly schedule in `vercel.json`. Add `OPENAI_API_KEY` and a random `CRON_SECRET` of at least 16 characters to the Vercel project. `ACTION_DISCOVERY_MODEL` and `ACTION_DISCOVERY_LIMIT` are optional overrides.
 
+## Congressional roster sync
+
+The government directory reads its roster only from the local database. A daily secured Vercel cron refreshes it from Congress.gov, which is authoritative for currently seated members. The published `congress-legislators` feeds add optional contact, social, and district-office details but cannot add members.
+
+Set `CONGRESS_API_KEY` (a Congress.gov/API.data.gov key) and `CRON_SECRET`, then bootstrap or inspect a sync:
+
+```bash
+pnpm run government:sync -- --dry-run
+pnpm run government:sync
+```
+
+The production job calls `/api/cron/sync-congress` daily using the same `CRON_SECRET` bearer authorization as the weekly action-discovery cron. `GOOGLE_CIVIC_API_KEY` is reserved for the separate private address-to-district lookup.
+
 ## Available scripts
 
-- `npm run dev` — start the development server
-- `npm run build` — create a production build
-- `npm start` — run the production build
-- `npm run lint` — lint the project
-- `npm run actions:discover` — search for new actions and add them to the admin review queue
-- `npm run db:generate` — generate a Drizzle migration from schema changes
-- `npm run db:migrate` — apply pending database migrations
-- `npm run auth:generate` — regenerate the Better Auth database schema
+- `pnpm run dev` — start the development server
+- `pnpm run build` — create a production build
+- `pnpm start` — run the production build
+- `pnpm run lint` — lint the project
+- `pnpm run actions:discover` — search for new actions and add them to the admin review queue
+- `pnpm run government:sync` — mirror the current Congress roster into the database
+- `pnpm run db:generate` — generate a Drizzle migration from schema changes
+- `pnpm run db:migrate` — apply pending database migrations
+- `pnpm run auth:generate` — regenerate the Better Auth database schema
