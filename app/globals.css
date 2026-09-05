@@ -385,6 +385,14 @@ footer>div { display:flex; justify-content:flex-end; gap:22px; font-size:11px; t
 .government-finder-form label { display:grid; gap:8px; color:var(--paper); font-size:10px; font-weight:950; letter-spacing:.1em; text-transform:uppercase; }
 .government-finder-form input { width:100%; border:2px solid transparent; border-radius:0; background:var(--paper); color:var(--ink); padding:14px 15px; font:700 16px/1.35 Arial,Helvetica,sans-serif; outline:none; }
 .government-finder-form input:focus { border-color:var(--red); box-shadow:4px 4px 0 var(--red); }
+.government-address-combobox { position:relative; }
+.government-address-panel { position:absolute; top:calc(100% + 10px); left:0; right:0; z-index:6; margin:0; padding:0; max-height:min(46vh,280px); overflow:auto; list-style:none; border:2px solid var(--paper); background:var(--paper); color:var(--ink); box-shadow:4px 4px 0 var(--red); }
+.government-address-panel button { width:100%; border:0; border-bottom:1px solid var(--line); background:transparent; color:var(--ink); display:grid; gap:3px; padding:12px 14px; cursor:pointer; text-align:left; }
+.government-address-panel li:last-child button { border-bottom:0; }
+.government-address-panel button strong { font-size:14px; font-weight:950; line-height:1.2; }
+.government-address-panel button span { font-size:12px; font-weight:700; line-height:1.35; color:rgba(20,33,61,.72); }
+.government-address-panel button.active, .government-address-panel button:hover { background:var(--ink); color:var(--paper); }
+.government-address-panel button.active span, .government-address-panel button:hover span { color:rgba(241,250,238,.78); }
 .government-finder-help { margin:0; max-width:560px; font-size:13px; font-weight:700; line-height:1.45; color:#cbd2df; }
 .government-finder-status { min-height:1.5em; }
 .government-finder-status p { margin:0; font-size:14px; font-weight:750; line-height:1.45; }
@@ -418,10 +426,12 @@ footer>div { display:flex; justify-content:flex-end; gap:22px; font-size:11px; t
 .congress-member-meta { margin:0; display:flex; flex-wrap:wrap; gap:6px 10px; font-size:13px; font-weight:800; line-height:1.4; }
 .congress-member-meta span + span::before { content:'·'; margin-right:10px; color:rgba(20,33,61,.45); }
 .congress-member-links { margin:0; padding:0; list-style:none; display:grid; gap:8px; }
-.congress-member-links a { font-size:12px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; text-underline-offset:4px; overflow-wrap:anywhere; }
+.congress-member-links a { color:linktext; font-size:12px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; text-decoration:none; overflow-wrap:anywhere; }
+.congress-member-links a:visited { color:visitedtext; }
 .congress-member-office { margin:0; font-size:13px; font-weight:700; line-height:1.45; overflow-wrap:anywhere; }
-.congress-member-social { display:flex; flex-wrap:wrap; gap:10px 14px; }
-.congress-member-social a { font-size:11px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; text-underline-offset:4px; }
+.congress-member-social { display:flex; flex-wrap:wrap; gap:6px; }
+.congress-member-social a { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; color:var(--ink); font-size:18px; text-decoration:none; transition:color .15s; }
+.congress-member-social a:hover, .congress-member-social a:focus-visible { color:var(--red); }
 .reapproval-warning { margin:-4px 0 3px; padding:14px 15px; border-left:5px solid var(--red); background:#fff0f1; color:#a81522; font-size:13px; font-weight:700; line-height:1.45; }
 .reapproval-warning strong { display:block; margin-bottom:2px; font-size:11px; font-weight:950; letter-spacing:.04em; text-transform:uppercase; }
 @media (max-width:780px) {

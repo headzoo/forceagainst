@@ -82,7 +82,7 @@ pnpm run government:sync -- --dry-run
 pnpm run government:sync
 ```
 
-The production job calls `/api/cron/sync-congress` daily using the same `CRON_SECRET` bearer authorization as the weekly action-discovery cron. `GOOGLE_CIVIC_API_KEY` is reserved for the separate private address-to-district lookup.
+The production job calls `/api/cron/sync-congress` daily using the same `CRON_SECRET` bearer authorization as the weekly action-discovery cron. `GOOGLE_CIVIC_API_KEY` is reserved for the separate private address-to-district lookup. `NEXT_PUBLIC_GOOGLE_PLACES_API_KEY` powers optional street-address autocomplete on that form; restrict it to Places API (New) and this site’s HTTP referrers.
 
 ## Available scripts
 

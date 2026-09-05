@@ -1,4 +1,13 @@
 import Image from 'next/image';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faFacebook,
+  faInstagram,
+  faTiktok,
+  faXTwitter,
+  faYoutube,
+  type IconDefinition,
+} from '@fortawesome/free-brands-svg-icons';
 import type { PublicCongressMember } from '@/lib/db';
 import { stripHtmlToText } from '@/lib/plain-text';
 
@@ -15,12 +24,12 @@ const STATE_NAMES: Record<string, string> = {
   GU: 'Guam', MP: 'Northern Mariana Islands', PR: 'Puerto Rico', VI: 'U.S. Virgin Islands',
 };
 
-const SOCIAL_LABELS: Record<string, string> = {
-  twitter: 'Twitter',
-  facebook: 'Facebook',
-  youtube: 'YouTube',
-  instagram: 'Instagram',
-  tiktok: 'TikTok',
+const SOCIAL_ICONS: Record<string, { icon: IconDefinition; label: string }> = {
+  twitter: { icon: faXTwitter, label: 'X' },
+  facebook: { icon: faFacebook, label: 'Facebook' },
+  youtube: { icon: faYoutube, label: 'YouTube' },
+  instagram: { icon: faInstagram, label: 'Instagram' },
+  tiktok: { icon: faTiktok, label: 'TikTok' },
 };
 
 function stateLabel(state: string) {
@@ -70,10 +79,11 @@ export function CongressMemberCard({ member }: CongressMemberCardProps) {
     .map(([platform, value]) => {
       if (!value?.trim()) return null;
       const href = socialUrl(platform, value.trim());
-      if (!href) return null;
-      return { platform, href, label: SOCIAL_LABELS[platform] ?? platform };
+      const social = SOCIAL_ICONS[platform];
+      if (!href || !social) return null;
+      return { platform, href, icon: social.icon, label: social.label };
     })
-    .filter((item): item is { platform: string; href: string; label: string } => item !== null);
+    .filter((item): item is { platform: string; href: string; icon: IconDefinition; label: string } => item !== null);
 
   return (
     <article className="congress-member-card">
@@ -136,9 +146,15 @@ export function CongressMemberCard({ member }: CongressMemberCardProps) {
 
         {socialLinks.length > 0 && (
           <div className="congress-member-social">
-            {socialLinks.map(({ platform, href, label }) => (
-              <a key={platform} href={href} target="_blank" rel="noopener noreferrer">
-                {label}
+            {socialLinks.map(({ platform, href, icon, label }) => (
+              <a
+                key={platform}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={label}
+              >
+                <FontAwesomeIcon icon={icon} fixedWidth />
               </a>
             ))}
           </div>

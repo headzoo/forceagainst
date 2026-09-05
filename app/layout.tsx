@@ -1,7 +1,11 @@
 import type { Metadata } from 'next';
+import { config } from '@fortawesome/fontawesome-svg-core';
+import '@fortawesome/fontawesome-svg-core/styles.css';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
+
+config.autoAddCss = false;
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://forceagainstsomething.com'),
