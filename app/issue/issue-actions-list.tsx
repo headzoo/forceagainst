@@ -2,7 +2,7 @@
 
 import { cn, s } from '@/app/tailwind-styles';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { LikeButton } from '@/app/action-like-button';
 import { ActionCardMeta } from '@/app/action-card-meta';
 import { authClient } from '@/lib/auth-client';
@@ -13,13 +13,21 @@ type IssueActionCard = Pick<
   'id' | 'slug' | 'title' | 'detail' | 'type' | 'urgent' | 'organization' | 'organizationSlug' | 'issueSlug' | 'effort' | 'commentCount'
 >;
 
+type ActionType = DirectoryAction['type'];
+const filters: Array<'All' | ActionType> = ['All', 'Petition', 'Lawsuit', 'Campaign'];
+
 export function IssueActionsList({ actions }: { actions: IssueActionCard[] }) {
   const { data: session } = authClient.useSession();
   const userId = session?.user.id;
+  const [filter, setFilter] = useState<(typeof filters)[number]>('All');
   const [likes, setLikes] = useState<{ userId: string; actionIds: Set<number> } | null>(null);
   const [updatingLikes, setUpdatingLikes] = useState<Set<number>>(new Set());
   const [likeError, setLikeError] = useState('');
   const likedActionIds = likes && likes.userId === userId ? likes.actionIds : new Set<number>();
+  const visible = useMemo(
+    () => filter === 'All' ? actions : actions.filter((action) => action.type === filter),
+    [actions, filter],
+  );
 
   useEffect(() => {
     if (!userId) return;
@@ -80,30 +88,35 @@ export function IssueActionsList({ actions }: { actions: IssueActionCard[] }) {
 
   return (
     <div>
-      {actions.map((action) => (
-        <article className={s.actionCard} key={action.id}>
-          <div className={s.cardMain}>
-            <div className={s.actionTitleRow}>
-              {session && (
-                <LikeButton
-                  actionTitle={action.title}
-                  liked={likedActionIds.has(action.id)}
-                  disabled={updatingLikes.has(action.id)}
-                  onClick={() => toggleLike(action.id)}
-                />
-              )}
-              <h3><Link href={`/a/${action.issueSlug}/${action.slug}`}>{action.title}</Link></h3>
+      <div className={s.filterRow} role="group" aria-label="Filter actions by type">
+        {filters.map((item) => <button key={item} onClick={() => setFilter(item)} className={filter === item ? s.filterActive : undefined} aria-pressed={filter === item}>{item} {item !== 'All' && <sup>{actions.filter((action) => action.type === item).length}</sup>}</button>)}
+      </div>
+      <div aria-live="polite">
+        {visible.map((action) => (
+          <article className={s.actionCard} key={action.id}>
+            <div className={s.cardMain}>
+              <div className={s.actionTitleRow}>
+                {session && (
+                  <LikeButton
+                    actionTitle={action.title}
+                    liked={likedActionIds.has(action.id)}
+                    disabled={updatingLikes.has(action.id)}
+                    onClick={() => toggleLike(action.id)}
+                  />
+                )}
+                <h3><Link href={`/a/${action.issueSlug}/${action.slug}`}>{action.title}</Link></h3>
+              </div>
+              <p>{action.detail}</p>
+              <span className={s.organization}>
+                <span className={s.typePill}>{action.type}</span>{action.urgent && <span className={cn(s.typePill, s.typePillUrgent)}>Priority</span>} <span className={s.organizationPrefix}>BY</span> <Link href={`/o/${action.organizationSlug}`}>{action.organization.toUpperCase()}</Link>
+              </span>
             </div>
-            <p>{action.detail}</p>
-            <span className={s.organization}>
-              <span className={s.typePill}>{action.type}</span>{action.urgent && <span className={cn(s.typePill, s.typePillUrgent)}>Priority</span>} <span className={s.organizationPrefix}>BY</span> <Link href={`/o/${action.organizationSlug}`}>{action.organization.toUpperCase()}</Link>
-            </span>
-          </div>
-          <div className={s.cardAction}><Link href={`/a/${action.issueSlug}/${action.slug}`} aria-label={`Learn more and take action: ${action.title}`}>TAKE ACTION</Link><ActionCardMeta commentCount={action.commentCount} effort={action.effort} /></div>
-        </article>
-      ))}
-      {actions.length === 0 && <p className={s.emptyState}>No published actions for this issue yet.</p>}
-      {likeError && <p className={s.likeError} role="alert">{likeError}</p>}
+            <div className={s.cardAction}><Link href={`/a/${action.issueSlug}/${action.slug}`} aria-label={`Learn more and take action: ${action.title}`}>TAKE ACTION</Link><ActionCardMeta commentCount={action.commentCount} effort={action.effort} /></div>
+          </article>
+        ))}
+        {visible.length === 0 && <p className={s.emptyState}>No published actions match this filter yet.</p>}
+        {likeError && <p className={s.likeError} role="alert">{likeError}</p>}
+      </div>
     </div>
   );
 }

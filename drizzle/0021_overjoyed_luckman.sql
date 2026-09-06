@@ -1,0 +1,1 @@
+ALTER TABLE "orgs" ADD COLUMN "sidebar" text DEFAULT '' NOT NULL;

@@ -134,6 +134,27 @@
       "when": 1788712266924,
       "tag": "0018_old_swarm",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1788715134526,
+      "tag": "0019_faithful_nitro",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1788715406915,
+      "tag": "0020_living_rhino",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1788716837906,
+      "tag": "0021_overjoyed_luckman",
+      "breakpoints": true
     }
   ]
 }

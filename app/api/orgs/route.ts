@@ -1,8 +1,8 @@
 import { eq } from 'drizzle-orm';
-import { orgs } from '@/db/schema';
+import { orgs, type OpenGraphMetadata } from '@/db/schema';
 import { db } from '@/lib/db';
 import { getMemberSession } from '@/lib/member';
-import { parsePublicHttpUrl } from '@/lib/action-metadata';
+import { analyzeWebsiteHref, parsePublicHttpUrl } from '@/lib/action-metadata';
 import { uniqueOrganizationSlug } from '@/lib/slugs';
 
 export async function POST(request: Request) {
@@ -26,9 +26,12 @@ export async function POST(request: Request) {
   }
 
   let website: string | null = null;
+  let openGraph: OpenGraphMetadata | null = null;
   if (websiteInput) {
     try {
-      website = parsePublicHttpUrl(websiteInput).toString();
+      const metadata = await analyzeWebsiteHref(websiteInput);
+      website = metadata.href;
+      openGraph = metadata.openGraph;
     } catch (error) {
       return Response.json({ error: error instanceof Error ? error.message : 'Enter a valid organization website.' }, { status: 400 });
     }
@@ -40,6 +43,7 @@ export async function POST(request: Request) {
       slug: await uniqueOrganizationSlug(name),
       name,
       website,
+      openGraph,
       description,
     }).returning();
 
@@ -70,9 +74,18 @@ export async function PATCH(request: Request) {
   }
 
   let website: string | null = null;
+  let openGraph: OpenGraphMetadata | null = null;
   if (websiteInput) {
     try {
-      website = parsePublicHttpUrl(websiteInput).toString();
+      const normalizedWebsite = parsePublicHttpUrl(websiteInput).toString();
+      if (normalizedWebsite === existing.website) {
+        website = existing.website;
+        openGraph = existing.openGraph;
+      } else {
+        const metadata = await analyzeWebsiteHref(normalizedWebsite);
+        website = metadata.href;
+        openGraph = metadata.openGraph;
+      }
     } catch (error) {
       return Response.json({ error: error instanceof Error ? error.message : 'Enter a valid organization website.' }, { status: 400 });
     }
@@ -81,7 +94,7 @@ export async function PATCH(request: Request) {
   try {
     const [organization] = await db
       .update(orgs)
-      .set({ name, website, description, updatedAt: new Date() })
+      .set({ name, website, openGraph, description, updatedAt: new Date() })
       .where(eq(orgs.ownerUserId, session.user.id))
       .returning();
 

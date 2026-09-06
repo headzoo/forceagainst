@@ -1,4 +1,4 @@
-import type { ActionOpenGraph } from '@/db/schema';
+import type { OpenGraphMetadata } from '@/db/schema';
 
 const MAX_HTML_BYTES = 1_000_000;
 const MAX_REDIRECTS = 3;
@@ -8,7 +8,12 @@ export type ActionMetadata = {
   suggestedTitle: string;
   suggestedDetail: string;
   effort: string;
-  openGraph: ActionOpenGraph | null;
+  openGraph: OpenGraphMetadata | null;
+};
+
+export type WebsiteMetadata = {
+  href: string;
+  openGraph: OpenGraphMetadata | null;
 };
 
 function decodeEntities(value: string) {
@@ -80,9 +85,9 @@ function publicAbsoluteUrl(value: string, baseUrl: URL) {
   }
 }
 
-export function extractActionOpenGraph(html: string, baseUrl: URL): ActionOpenGraph | null {
+export function extractOpenGraph(html: string, baseUrl: URL): OpenGraphMetadata | null {
   const values = metaValues(html);
-  const openGraph: ActionOpenGraph = {};
+  const openGraph: OpenGraphMetadata = {};
   const title = metaContent(values, ['og:title'], 300);
   const description = metaContent(values, ['og:description'], 1_000);
   const image = publicAbsoluteUrl(
@@ -104,6 +109,8 @@ export function extractActionOpenGraph(html: string, baseUrl: URL): ActionOpenGr
 
   return Object.keys(openGraph).length > 0 ? openGraph : null;
 }
+
+export const extractActionOpenGraph = extractOpenGraph;
 
 function isPrivateIpv4(hostname: string) {
   if (!/^\d{1,3}(?:\.\d{1,3}){3}$/.test(hostname)) return false;
@@ -209,7 +216,7 @@ export function slugifyTitle(title: string) {
   return slug || 'action';
 }
 
-export async function analyzeActionHref(input: string): Promise<ActionMetadata> {
+async function fetchPublicHtml(input: string) {
   let url = parsePublicHttpUrl(input);
   let response: Response | undefined;
 
@@ -236,6 +243,16 @@ export async function analyzeActionHref(input: string): Promise<ActionMetadata> 
   }
 
   const html = await readLimitedHtml(response);
+  return { href: url.toString(), html, url };
+}
+
+export async function analyzeWebsiteHref(input: string): Promise<WebsiteMetadata> {
+  const { href, html, url } = await fetchPublicHtml(input);
+  return { href, openGraph: extractOpenGraph(html, url) };
+}
+
+export async function analyzeActionHref(input: string): Promise<ActionMetadata> {
+  const { href, html, url } = await fetchPublicHtml(input);
   const metadata = metaValues(html);
   const suggestedTitle = firstTag(html, 'h1')
     || firstTag(html, 'h2')
@@ -245,10 +262,10 @@ export async function analyzeActionHref(input: string): Promise<ActionMetadata> 
   if (!suggestedTitle) throw new Error('We could not find a page heading. You can try another link.');
 
   return {
-    href: url.toString(),
+    href,
     suggestedTitle,
     suggestedDetail: metaContent(metadata, ['description', 'og:description', 'twitter:description']),
     effort: inferEffort(html),
-    openGraph: extractActionOpenGraph(html, url),
+    openGraph: extractOpenGraph(html, url),
   };
 }

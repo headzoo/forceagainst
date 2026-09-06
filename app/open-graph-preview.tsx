@@ -1,5 +1,5 @@
-import type { ActionOpenGraph } from '@/db/schema';
 import { s } from '@/app/tailwind-styles';
+import type { OpenGraphMetadata } from '@/db/schema';
 
 function displayHost(value: string) {
   try {
@@ -9,12 +9,12 @@ function displayHost(value: string) {
   }
 }
 
-export function ActionOpenGraphPreview({
+export function OpenGraphPreview({
   href,
   openGraph,
 }: {
   href: string;
-  openGraph: ActionOpenGraph;
+  openGraph: OpenGraphMetadata;
 }) {
   const displayUrl = openGraph.url || href;
   const host = displayHost(displayUrl);

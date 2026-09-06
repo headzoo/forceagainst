@@ -1,0 +1,1 @@
+ALTER TABLE "orgs" ADD COLUMN "open_graph" jsonb;

@@ -217,6 +217,9 @@ export function ActionsDirectory({ issues, actions }: { issues: Issue[]; actions
             {visible.length === 0 && <p className={s.emptyState}>No published actions match this filter yet.</p>}
             {likeError && <p className={s.likeError} role="alert">{likeError}</p>}
           </div>
+          <Link className={cn(s.primaryButton, s.homepageBrowseMore)} href={`/i/${selectedIssue.slug}`}>
+            BROWSE MORE <span aria-hidden="true">→</span>
+          </Link>
         </section>
       )}
 

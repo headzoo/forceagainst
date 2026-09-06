@@ -51,7 +51,7 @@ export type CongressMemberSocialHandles = {
   tiktok?: string;
 };
 
-export type ActionOpenGraph = {
+export type OpenGraphMetadata = {
   title?: string;
   description?: string;
   image?: string;
@@ -61,12 +61,15 @@ export type ActionOpenGraph = {
   type?: string;
 };
 
+export type ActionOpenGraph = OpenGraphMetadata;
+
 export const issues = pgTable('issues', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
   slug: text('slug').notNull().unique(),
   name: text('name').notNull(),
   detail: text('detail').notNull().default(''),
   description: text('description').notNull().default(''),
+  sidebar: text('sidebar').notNull().default(''),
   status: issueStatus('status').notNull().default('planned'),
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -79,7 +82,9 @@ export const orgs = pgTable('orgs', {
   slug: text('slug').notNull(),
   name: text('name').notNull(),
   website: text('website'),
+  openGraph: jsonb('open_graph').$type<OpenGraphMetadata>(),
   description: text('description').notNull().default(''),
+  sidebar: text('sidebar').notNull().default(''),
   searchTsv: tsvector('search_tsv').generatedAlwaysAs(sql`
     setweight(to_tsvector('english', coalesce(name, '')), 'A') ||
     setweight(to_tsvector('english', coalesce(description, '')), 'B')

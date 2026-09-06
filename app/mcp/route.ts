@@ -227,6 +227,7 @@ const handler = createMcpHandler((server) => {
         name: organization.name,
         website: organization.website,
         description: organization.description,
+        sidebar: organization.sidebar,
         actions: visibleActions.map((action) => serializeAction({
           ...action,
           organization: organization.name,

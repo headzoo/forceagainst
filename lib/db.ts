@@ -56,7 +56,9 @@ export type PublishedOrganization = {
   slug: string;
   name: string;
   website: string | null;
+  openGraph: schema.OpenGraphMetadata | null;
   description: string;
+  sidebar: string;
   actions: Array<PublicAction & { issue: string; issueSlug: string }>;
 };
 
@@ -475,7 +477,9 @@ const organizationPublicColumns = {
   slug: orgs.slug,
   name: orgs.name,
   website: orgs.website,
+  openGraph: orgs.openGraph,
   description: orgs.description,
+  sidebar: orgs.sidebar,
   createdAt: orgs.createdAt,
   updatedAt: orgs.updatedAt,
 };
