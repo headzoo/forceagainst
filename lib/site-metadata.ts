@@ -4,9 +4,9 @@ export const SITE_NAME = 'Force Against Something';
 export const SITE_URL = 'https://forceagainstsomething.com';
 
 const SITE_OPEN_GRAPH_IMAGE = {
-  url: '/og.png',
-  width: 1200,
-  height: 628,
+  url: '/header-wordmark-star.png',
+  width: 620,
+  height: 99,
   alt: SITE_NAME,
 };
 
