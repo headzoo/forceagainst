@@ -81,6 +81,7 @@ export const orgs = pgTable('orgs', {
   ownerUserId: text('owner_user_id').references(() => user.id, { onDelete: 'set null' }),
   slug: text('slug').notNull(),
   name: text('name').notNull(),
+  avatar: text('avatar'),
   website: text('website'),
   openGraph: jsonb('open_graph').$type<OpenGraphMetadata>(),
   description: text('description').notNull().default(''),
@@ -192,6 +193,26 @@ export const commentUserBlocks = pgTable('comment_user_blocks', {
   primaryKey({ columns: [table.blockerUserId, table.blockedUserId] }),
   check('comment_user_blocks_not_self_check', sql`${table.blockerUserId} <> ${table.blockedUserId}`),
   index('comment_user_blocks_blocked_idx').on(table.blockedUserId),
+]);
+
+export const actionCommentBans = pgTable('action_comment_bans', {
+  actionId: bigint('action_id', { mode: 'number' }).notNull().references(() => actions.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  bannedByUserId: text('banned_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  primaryKey({ columns: [table.actionId, table.userId] }),
+  index('action_comment_bans_user_idx').on(table.userId),
+]);
+
+export const organizationCommentBans = pgTable('organization_comment_bans', {
+  organizationId: bigint('organization_id', { mode: 'number' }).notNull().references(() => orgs.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  bannedByUserId: text('banned_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  primaryKey({ columns: [table.organizationId, table.userId] }),
+  index('organization_comment_bans_user_idx').on(table.userId),
 ]);
 
 export const commentReports = pgTable('comment_reports', {
@@ -328,6 +349,8 @@ export type Organization = typeof orgs.$inferSelect;
 export type ActionRecord = typeof actions.$inferSelect;
 export type ActionLike = typeof actionLikes.$inferSelect;
 export type ActionComment = typeof actionComments.$inferSelect;
+export type ActionCommentBan = typeof actionCommentBans.$inferSelect;
+export type OrganizationCommentBan = typeof organizationCommentBans.$inferSelect;
 export type CommentReport = typeof commentReports.$inferSelect;
 export type CommentUserBlock = typeof commentUserBlocks.$inferSelect;
 export type CommentModerationEvent = typeof commentModerationEvents.$inferSelect;

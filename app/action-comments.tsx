@@ -12,6 +12,19 @@ import {
   type ActionCommentView,
 } from '@/lib/action-comments';
 import { authClient } from '@/lib/auth-client';
+import type { CommentBanScopes } from '@/lib/comment-moderation';
+
+type CommentModeration = {
+  canBanOrganization: boolean;
+  organizationName: string;
+  bannedUsers: CommentBanScopes;
+};
+
+type BanTarget = {
+  id: string;
+  name: string;
+  username: string;
+};
 
 function formatCommentDate(value: string) {
   const date = new Date(value);
@@ -197,17 +210,73 @@ function CommentReportForm({ commentId, onCancel, onReport }: {
   );
 }
 
-function CommentItem({ node, viewerId, canComment, canReport, deletingId, blockingUserId, onCreate, onDelete, onBlock, onUnblock, onReport }: {
+function CommentBanDialog({ target, organizationName, canBanOrganization, working, error, onClose, onBan }: {
+  target: BanTarget;
+  organizationName: string;
+  canBanOrganization: boolean;
+  working: boolean;
+  error: string;
+  onClose: () => void;
+  onBan: (banFromAction: boolean, banFromOrganization: boolean) => Promise<void>;
+}) {
+  const [banFromAction, setBanFromAction] = useState(true);
+  const [banFromOrganization, setBanFromOrganization] = useState(false);
+
+  useEffect(() => {
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !working) onClose();
+    }
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [onClose, working]);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!banFromAction && !banFromOrganization) return;
+    await onBan(banFromAction, banFromOrganization);
+  }
+
+  return (
+    <div className={s.commentModerationOverlay} onMouseDown={(event) => { if (event.target === event.currentTarget && !working) onClose(); }}>
+      <section className={s.commentModerationDialog} role="dialog" aria-modal="true" aria-labelledby="comment-ban-title">
+        <button className={s.commentModerationClose} type="button" aria-label="Close ban dialog" disabled={working} onClick={onClose}>×</button>
+        <p className={cn(s.eyebrow, s.commentModerationEyebrow)}><span /> MODERATE USER</p>
+        <h2 id="comment-ban-title">Ban @{target.username}?</h2>
+        <p>Choose where {target.name} should no longer be able to post or reply.</p>
+        <form onSubmit={(event) => void submit(event)}>
+          <label className={s.commentModerationOption}>
+            <input type="checkbox" checked={banFromAction} autoFocus onChange={(event) => setBanFromAction(event.target.checked)} />
+            <span><strong>Ban from this action</strong><small>Stops participation in this discussion only.</small></span>
+          </label>
+          <label className={s.commentModerationOption}>
+            <input type="checkbox" checked={banFromOrganization} disabled={!canBanOrganization} onChange={(event) => setBanFromOrganization(event.target.checked)} />
+            <span><strong>Ban from the whole organization</strong><small>{canBanOrganization ? `Stops participation in every ${organizationName} action discussion.` : 'Only the organization owner can apply this ban.'}</small></span>
+          </label>
+          {error && <p className={s.commentError} role="alert">{error}</p>}
+          <div className={s.commentModerationButtons}>
+            <button type="button" disabled={working} onClick={onClose}>Cancel</button>
+            <button type="submit" disabled={working || (!banFromAction && !banFromOrganization)}>{working ? 'BANNING…' : 'BAN USER'}</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  );
+}
+
+function CommentItem({ node, viewerId, canComment, canReport, canModerate, bannedScopes, deletingId, blockingUserId, onCreate, onDelete, onBlock, onUnblock, onOpenBan, onReport }: {
   node: ActionCommentNode;
   viewerId: string | null;
   canComment: boolean;
   canReport: boolean;
+  canModerate: boolean;
+  bannedScopes: CommentBanScopes;
   deletingId: number | null;
   blockingUserId: string | null;
   onCreate: (body: string, parentId: number | null) => Promise<void>;
   onDelete: (comment: ActionCommentView) => Promise<void>;
   onBlock: (userId: string, username: string) => Promise<void>;
   onUnblock: (userId: string) => Promise<void>;
+  onOpenBan: (target: BanTarget) => void;
   onReport: (commentId: number, reason: string, details: string) => Promise<void>;
 }) {
   const [replying, setReplying] = useState(false);
@@ -216,12 +285,14 @@ function CommentItem({ node, viewerId, canComment, canReport, deletingId, blocki
   const visible = node.visibility === 'visible';
   const blocked = node.visibility === 'blocked';
   const canReply = canComment && visible && node.depth < MAX_COMMENT_DEPTH;
-  const canDelete = visible && node.author?.id === viewerId;
+  const canDelete = visible && Boolean(node.author?.id === viewerId || (canModerate && node.author));
   const otherAuthor = node.author && node.author.id !== viewerId ? node.author : null;
+  const authorBanScopes = otherAuthor ? bannedScopes[otherAuthor.id] : null;
+  const canBan = Boolean(canModerate && otherAuthor && visible && !authorBanScopes?.action && !authorBanScopes?.organization);
   const canBlock = Boolean(viewerId && otherAuthor && visible);
   const canUnblock = Boolean(viewerId && otherAuthor && blocked);
   const canSubmitReport = Boolean(canReport && otherAuthor && visible && !node.reportedByViewer);
-  const showActions = canReply || canDelete || canBlock || canUnblock || canSubmitReport || node.reportedByViewer || blocked;
+  const showActions = canReply || canDelete || canBan || Boolean(authorBanScopes) || canBlock || canUnblock || canSubmitReport || node.reportedByViewer || blocked;
 
   const placeholder = node.visibility === 'user_deleted'
     ? { label: 'Deleted comment', body: 'This comment has been deleted.' }
@@ -259,6 +330,9 @@ function CommentItem({ node, viewerId, canComment, canReport, deletingId, blocki
             <div className={s.commentActions}>
               {canReply && <button type="button" onClick={() => setReplying((current) => !current)}>{replying ? 'Cancel reply' : 'Reply'}</button>}
               {canDelete && <button className={s.commentDelete} type="button" disabled={deletingId === node.id} onClick={() => onDelete(node)}>{deletingId === node.id ? 'Deleting…' : 'Delete'}</button>}
+              {canBan && otherAuthor && <button className={s.commentDelete} type="button" onClick={() => onOpenBan({ id: otherAuthor.id, name: otherAuthor.name, username: otherAuthor.username })}>Ban</button>}
+              {authorBanScopes?.organization && <span className={s.commentReported}>Banned from organization</span>}
+              {!authorBanScopes?.organization && authorBanScopes?.action && <span className={s.commentReported}>Banned from action</span>}
               {blocked && <button type="button" onClick={() => setShowBlocked((current) => !current)}>{showBlocked ? 'Hide' : 'Show'}</button>}
               {canBlock && otherAuthor && <button type="button" disabled={blockingUserId === otherAuthor.id} onClick={() => void onBlock(otherAuthor.id, otherAuthor.username)}>{blockingUserId === otherAuthor.id ? 'Blocking…' : 'Block'}</button>}
               {canUnblock && otherAuthor && <button type="button" disabled={blockingUserId === otherAuthor.id} onClick={() => void onUnblock(otherAuthor.id)}>{blockingUserId === otherAuthor.id ? 'Unblocking…' : 'Unblock'}</button>}
@@ -272,23 +346,28 @@ function CommentItem({ node, viewerId, canComment, canReport, deletingId, blocki
       {replying && canReply && <CommentComposer parentId={node.id} autoFocus onCancel={() => setReplying(false)} onCreate={onCreate} />}
       {node.children.length > 0 && (
         <div className={s.commentChildren}>
-          {node.children.map((child) => <CommentItem key={child.id} node={child} viewerId={viewerId} canComment={canComment} canReport={canReport} deletingId={deletingId} blockingUserId={blockingUserId} onCreate={onCreate} onDelete={onDelete} onBlock={onBlock} onUnblock={onUnblock} onReport={onReport} />)}
+          {node.children.map((child) => <CommentItem key={child.id} node={child} viewerId={viewerId} canComment={canComment} canReport={canReport} canModerate={canModerate} bannedScopes={bannedScopes} deletingId={deletingId} blockingUserId={blockingUserId} onCreate={onCreate} onDelete={onDelete} onBlock={onBlock} onUnblock={onUnblock} onOpenBan={onOpenBan} onReport={onReport} />)}
         </div>
       )}
     </div>
   );
 }
 
-export function ActionComments({ actionId, initialComments, commentsLocked = false, slowModeSeconds = 0 }: {
+export function ActionComments({ actionId, initialComments, commentsLocked = false, slowModeSeconds = 0, moderation = null }: {
   actionId: number;
   initialComments: ActionCommentView[];
   commentsLocked?: boolean;
   slowModeSeconds?: number;
+  moderation?: CommentModeration | null;
 }) {
   const { data: session, isPending } = authClient.useSession();
   const [comments, setComments] = useState(initialComments);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [blockingUserId, setBlockingUserId] = useState<string | null>(null);
+  const [banTarget, setBanTarget] = useState<BanTarget | null>(null);
+  const [banWorking, setBanWorking] = useState(false);
+  const [banError, setBanError] = useState('');
+  const [bannedScopes, setBannedScopes] = useState<CommentBanScopes>(moderation?.bannedUsers ?? {});
   const [commentAccess, setCommentAccess] = useState<null | {
     userId: string;
     allowed: boolean;
@@ -316,7 +395,7 @@ export function ActionComments({ actionId, initialComments, commentsLocked = fal
     if (!userId || !emailVerified) return;
 
     let active = true;
-    fetch('/api/account/comment-access', { cache: 'no-store' })
+    fetch(`/api/account/comment-access?actionId=${actionId}`, { cache: 'no-store' })
       .then(async (response) => {
         if (!response.ok) throw new Error('Could not check comment access.');
         return await response.json() as { allowed: boolean; message: string | null };
@@ -333,7 +412,7 @@ export function ActionComments({ actionId, initialComments, commentsLocked = fal
       });
 
     return () => { active = false; };
-  }, [emailVerified, userId]);
+  }, [actionId, emailVerified, userId]);
 
   async function createComment(body: string, parentId: number | null) {
     const response = await fetch(`/api/actions/${actionId}/comments`, {
@@ -351,14 +430,14 @@ export function ActionComments({ actionId, initialComments, commentsLocked = fal
     setDeletingId(comment.id);
     try {
       const response = await fetch(`/api/comments/${comment.id}`, { method: 'DELETE' });
-      const data = await response.json().catch(() => ({})) as { error?: unknown };
+      const data = await response.json().catch(() => ({})) as { error?: unknown; visibility?: ActionCommentView['visibility'] };
       if (!response.ok) {
         alert(String(data.error ?? 'We could not delete that comment.'));
         return;
       }
 
       setComments((current) => current.map((item) => item.id === comment.id
-        ? { ...item, body: null, visibility: 'user_deleted', author: null }
+        ? { ...item, body: null, visibility: data.visibility ?? 'user_deleted', author: null }
         : item));
     } catch {
       alert('We could not delete that comment. Check your connection and try again.');
@@ -413,6 +492,33 @@ export function ActionComments({ actionId, initialComments, commentsLocked = fal
       : comment));
   }
 
+  async function banUser(banFromAction: boolean, banFromOrganization: boolean) {
+    if (!banTarget) return;
+    setBanWorking(true);
+    setBanError('');
+    try {
+      const response = await fetch(`/api/actions/${actionId}/comment-bans`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: banTarget.id, banFromAction, banFromOrganization }),
+      });
+      const data = await response.json().catch(() => ({})) as { error?: unknown };
+      if (!response.ok) throw new Error(String(data.error ?? 'We could not ban that user.'));
+      setBannedScopes((current) => ({
+        ...current,
+        [banTarget.id]: {
+          action: current[banTarget.id]?.action === true || banFromAction,
+          organization: current[banTarget.id]?.organization === true || banFromOrganization,
+        },
+      }));
+      setBanTarget(null);
+    } catch (problem) {
+      setBanError(problem instanceof Error ? problem.message : 'We could not ban that user.');
+    } finally {
+      setBanWorking(false);
+    }
+  }
+
   return (
     <section className={s.actionCommentsShell} id="comments" aria-labelledby="comments-title">
       <div className={s.actionCommentsHeading}>
@@ -440,10 +546,11 @@ export function ActionComments({ actionId, initialComments, commentsLocked = fal
           </div>
         )}
         <div className={s.commentThreadList}>
-          {threads.map((thread) => <CommentItem key={thread.id} node={thread} viewerId={session?.user.id ?? null} canComment={canComment} canReport={canReport} deletingId={deletingId} blockingUserId={blockingUserId} onCreate={createComment} onDelete={deleteComment} onBlock={blockUser} onUnblock={unblockUser} onReport={reportComment} />)}
+          {threads.map((thread) => <CommentItem key={thread.id} node={thread} viewerId={session?.user.id ?? null} canComment={canComment} canReport={canReport} canModerate={Boolean(moderation)} bannedScopes={bannedScopes} deletingId={deletingId} blockingUserId={blockingUserId} onCreate={createComment} onDelete={deleteComment} onBlock={blockUser} onUnblock={unblockUser} onOpenBan={(target) => { setBanError(''); setBanTarget(target); }} onReport={reportComment} />)}
           {threads.length === 0 && <p className={s.commentsStatus}>No comments yet. Be the first to share something useful.</p>}
         </div>
       </div>
+      {banTarget && moderation && <CommentBanDialog key={banTarget.id} target={banTarget} organizationName={moderation.organizationName} canBanOrganization={moderation.canBanOrganization} working={banWorking} error={banError} onClose={() => { if (!banWorking) setBanTarget(null); }} onBan={banUser} />}
     </section>
   );
 }

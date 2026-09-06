@@ -145,12 +145,18 @@ export function AuthControl() {
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21.2l7.8-7.7 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>
               Liked
             </Link>
-            <Link className={s.accountMenuComments} href="/comments" role="menuitem" onClick={() => setMenuOpen(false)}>
+            <Link className={s.accountMenuIcon} href="/comments" role="menuitem" onClick={() => setMenuOpen(false)}>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v11H9l-5 4v-15Z" /></svg>
               Comments
             </Link>
-            <Link href="/account" role="menuitem" onClick={() => setMenuOpen(false)}>Account</Link>
-            <Link href="/organization" role="menuitem" onClick={() => setMenuOpen(false)}>Organization</Link>
+            <Link className={s.accountMenuIcon} href="/account" role="menuitem" onClick={() => setMenuOpen(false)}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M5 20c.6-4 3-6 7-6s6.4 2 7 6" /></svg>
+              Account
+            </Link>
+            <Link className={s.accountMenuIcon} href="/organization" role="menuitem" onClick={() => setMenuOpen(false)}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V7l8-3 8 3v13M2 20h20M8 10h1M15 10h1M8 14h1M15 14h1M10 20v-3h4v3" /></svg>
+              Organization
+            </Link>
             {isAdmin && <Link href="/admin" role="menuitem" onClick={() => setMenuOpen(false)}>Review submissions</Link>}
             <button type="button" role="menuitem" onClick={() => authClient.signOut()}>Log out</button>
           </div>

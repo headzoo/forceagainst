@@ -10,6 +10,7 @@ import { ActionLikeButton } from '@/app/action-like-button';
 import { OpenGraphPreview } from '@/app/open-graph-preview';
 import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
+import { getActionCommentBanScopes, getActionCommentModerationAccess } from '@/lib/comment-moderation';
 import { getActionComments, getPublishedActionBySlugs } from '@/lib/db';
 import { getMemberSession } from '@/lib/member';
 
@@ -69,7 +70,15 @@ export default async function ActionPage({ params }: ActionPageProps) {
   const action = await findAction(params);
   if (!action) notFound();
   const session = await getMemberSession();
-  const comments = await getActionComments(action.id, session?.user.id ?? null);
+  const [comments, moderationAccess] = await Promise.all([
+    getActionComments(action.id, session?.user.id ?? null),
+    session ? getActionCommentModerationAccess(action.id, session.user.id) : Promise.resolve(null),
+  ]);
+  const commentModeration = moderationAccess?.canModerate ? {
+    canBanOrganization: moderationAccess.canBanOrganization,
+    organizationName: moderationAccess.organizationName,
+    bannedUsers: await getActionCommentBanScopes(action.id, moderationAccess.organizationId),
+  } : null;
   const createdDate = formatCreatedDate(action.createdAt);
   const { titleStart, titleEnd } = splitTitleEnding(action.title);
 
@@ -131,7 +140,7 @@ export default async function ActionPage({ params }: ActionPageProps) {
         </article>
       </section>
 
-      <ActionComments actionId={action.id} initialComments={comments} commentsLocked={action.commentsLocked} slowModeSeconds={action.commentSlowModeSeconds} />
+      <ActionComments actionId={action.id} initialComments={comments} commentsLocked={action.commentsLocked} slowModeSeconds={action.commentSlowModeSeconds} moderation={commentModeration} />
 
       <SiteFooter />
     </main>

@@ -24,11 +24,6 @@ export async function POST(request: Request, { params }: RouteContext) {
   if (!session.user.emailVerified) {
     return Response.json({ error: 'Verify your email before reporting comments.' }, { status: 403 });
   }
-  const access = await getUserCommentAccess(session.user.id);
-  if (!access.allowed) {
-    return Response.json({ error: 'Your account cannot submit comment reports right now.' }, { status: 403 });
-  }
-
   const commentId = Number((await params).id);
   if (!Number.isSafeInteger(commentId) || commentId <= 0) {
     return Response.json({ error: 'Choose a valid comment.' }, { status: 400 });
@@ -50,6 +45,11 @@ export async function POST(request: Request, { params }: RouteContext) {
   if (!comment) return Response.json({ error: 'That comment is no longer available.' }, { status: 404 });
   if (comment.userId === session.user.id) {
     return Response.json({ error: 'You cannot report your own comment.' }, { status: 400 });
+  }
+
+  const access = await getUserCommentAccess(session.user.id, new Date(), comment.actionId);
+  if (!access.allowed) {
+    return Response.json({ error: 'Your account cannot submit comment reports in this discussion.' }, { status: 403 });
   }
 
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1_000);

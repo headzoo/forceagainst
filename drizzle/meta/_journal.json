@@ -162,6 +162,20 @@
       "when": 1788718005604,
       "tag": "0022_merge_duplicate_organizations",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1788722463081,
+      "tag": "0023_lush_pretty_boy",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1788722653959,
+      "tag": "0024_add_organization_avatar",
+      "breakpoints": true
     }
   ]
 }

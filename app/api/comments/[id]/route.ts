@@ -1,5 +1,5 @@
 import { and, eq, inArray, isNull } from 'drizzle-orm';
-import { actionComments, commentReports } from '@/db/schema';
+import { actionComments, actions, commentModerationEvents, commentReports, orgs } from '@/db/schema';
 import { db } from '@/lib/db';
 import { getMemberSession } from '@/lib/member';
 
@@ -14,24 +14,79 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
     return Response.json({ error: 'Choose a valid comment.' }, { status: 400 });
   }
 
-  const [deleted] = await db.update(actionComments).set({
+  const [comment] = await db.select({
+    id: actionComments.id,
+    actionId: actionComments.actionId,
+    authorId: actionComments.userId,
+    moderationStatus: actionComments.moderationStatus,
+    deletedAt: actionComments.deletedAt,
+    submittedByUserId: actions.submittedByUserId,
+    organizationOwnerUserId: orgs.ownerUserId,
+  })
+    .from(actionComments)
+    .innerJoin(actions, eq(actionComments.actionId, actions.id))
+    .innerJoin(orgs, eq(actions.orgId, orgs.id))
+    .where(eq(actionComments.id, commentId))
+    .limit(1);
+
+  if (!comment || comment.deletedAt || comment.moderationStatus !== 'visible') {
+    return Response.json({ error: 'That comment is no longer available.' }, { status: 404 });
+  }
+
+  const deletingOwnComment = comment.authorId === session.user.id;
+  const moderatingComment = !deletingOwnComment && (
+    comment.submittedByUserId === session.user.id
+    || comment.organizationOwnerUserId === session.user.id
+  );
+  if (!deletingOwnComment && !moderatingComment) {
+    return Response.json({ error: 'You can only delete your own comments unless you moderate this action.' }, { status: 403 });
+  }
+
+  const now = new Date();
+  const [deleted] = await db.update(actionComments).set(deletingOwnComment ? {
     body: '[deleted]',
-    deletedAt: new Date(),
-    updatedAt: new Date(),
+    deletedAt: now,
+    updatedAt: now,
+  } : {
+    moderationStatus: 'removed',
+    moderationReason: 'Removed by the action moderator.',
+    moderatedAt: now,
+    moderatedByAdminId: session.user.id,
+    moderatedByAdminName: session.user.name,
+    updatedAt: now,
   }).where(and(
-    eq(actionComments.id, commentId),
-    eq(actionComments.userId, session.user.id),
+    eq(actionComments.id, comment.id),
     isNull(actionComments.deletedAt),
+    eq(actionComments.moderationStatus, 'visible'),
   )).returning({ id: actionComments.id });
 
-  if (!deleted) return Response.json({ error: 'You can only delete your own comments.' }, { status: 403 });
+  if (!deleted) return Response.json({ error: 'That comment changed before it could be removed.' }, { status: 409 });
   await db.update(commentReports).set({
     status: 'dismissed',
-    resolutionNote: 'Comment deleted by its author.',
-    updatedAt: new Date(),
+    resolutionNote: deletingOwnComment ? 'Comment deleted by its author.' : 'Comment removed by the action moderator.',
+    updatedAt: now,
   }).where(and(
     eq(commentReports.commentId, deleted.id),
     inArray(commentReports.status, ['pending', 'reviewing']),
   ));
-  return Response.json({ id: deleted.id, deleted: true });
+
+  if (moderatingComment) {
+    await db.insert(commentModerationEvents).values({
+      actionId: comment.actionId,
+      commentId: comment.id,
+      targetUserId: comment.authorId,
+      event: 'comment_removed',
+      reason: 'Removed by the action moderator.',
+      previousState: 'visible',
+      newState: 'removed',
+      performedByAdminId: session.user.id,
+      performedByAdminName: session.user.name,
+    });
+  }
+
+  return Response.json({
+    id: deleted.id,
+    deleted: true,
+    visibility: deletingOwnComment ? 'user_deleted' : 'removed',
+  });
 }

@@ -55,6 +55,7 @@ export type PublishedOrganization = {
   id: number;
   slug: string;
   name: string;
+  avatar: string | null;
   website: string | null;
   openGraph: schema.OpenGraphMetadata | null;
   description: string;
@@ -66,7 +67,9 @@ export type OrganizationDirectoryItem = {
   id: number;
   slug: string;
   name: string;
+  avatar: string | null;
   website: string | null;
+  description: string;
   actionCount: number;
 };
 
@@ -495,7 +498,7 @@ export async function getPublishedOrganizationBySlug(slug: string): Promise<Publ
 export async function getOrganizationDirectory(): Promise<OrganizationDirectoryItem[]> {
   const [organizationRows, actionCountRows] = await Promise.all([
     db
-      .select({ id: orgs.id, slug: orgs.slug, name: orgs.name, website: orgs.website })
+      .select({ id: orgs.id, slug: orgs.slug, name: orgs.name, avatar: orgs.avatar, website: orgs.website, description: orgs.description })
       .from(orgs)
       .orderBy(asc(orgs.name)),
     db
@@ -516,6 +519,7 @@ const organizationPublicColumns = {
   id: orgs.id,
   slug: orgs.slug,
   name: orgs.name,
+  avatar: orgs.avatar,
   website: orgs.website,
   openGraph: orgs.openGraph,
   description: orgs.description,

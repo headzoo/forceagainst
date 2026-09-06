@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { type FormEvent, useEffect, useState } from 'react';
 import { AuthControl } from '@/app/auth-control';
+import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
 import { authClient } from '@/lib/auth-client';
 
@@ -249,6 +250,7 @@ export function AccountSettings() {
           )}
         </div>
       </section>
+      <SiteFooter />
     </main>
   );
 }
