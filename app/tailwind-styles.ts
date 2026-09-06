@@ -243,6 +243,10 @@ export const s = {
   orgWebsitePreview: 'mb-[22px]',
   orgDescriptionShell: 'grid grid-cols-[minmax(220px,.55fr)_minmax(0,1.45fr)] gap-[8vw] border-b-2 border-ink px-[6vw] py-[85px] max-[780px]:grid-cols-1 max-[780px]:gap-[38px] max-[780px]:px-5 max-[780px]:py-[65px]',
   orgActionsSection: 'px-[5vw] pt-[85px] pb-[105px] max-[780px]:px-5 max-[780px]:pt-[65px] max-[780px]:pb-[75px]',
+  orgDirectoryTitle: `${headingBase} text-[clamp(55px,7.4vw,108px)] [overflow-wrap:anywhere] max-[780px]:text-[clamp(50px,16vw,78px)]`,
+  orgDirectorySection: 'px-[6vw] pt-[82px] pb-[110px] max-[780px]:px-5 max-[780px]:pt-[60px] max-[780px]:pb-[78px]',
+  orgDirectoryList: 'm-0 list-none border-t-2 border-ink p-0',
+  orgDirectoryLink: 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-8 border-b-[1.5px] border-ink px-1 py-[27px] text-ink no-underline hover:[&_h3]:text-signal focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-signal focus-visible:[&_h3]:text-signal max-[780px]:grid-cols-1 max-[780px]:gap-[15px] [&_h3]:m-0 [&_h3]:text-[clamp(25px,3vw,42px)] [&_h3]:leading-[.95] [&_h3]:tracking-[-.05em] [&_h3]:uppercase [&_p]:mt-[10px] [&_p]:mb-0 [&_p]:text-[12px] [&_p]:font-extrabold [&_p]:text-[#667085] [&>span]:flex [&>span]:items-center [&>span]:gap-5 [&>span]:text-[10px] [&>span]:font-[950] [&>span]:tracking-[.08em] [&>span]:uppercase [&>span_b]:text-[20px] [&>span_b]:text-signal',
 
   likedHero: 'grid grid-cols-[1.3fr_.7fr] border-b-2 border-ink max-[780px]:grid-cols-1',
   likedHeading: `${diagonalInk} min-w-0 border-r-2 border-ink px-[6vw] pt-[70px] pb-[78px] max-[780px]:border-r-0 max-[780px]:border-b-2 max-[780px]:px-5 max-[780px]:pt-[45px] max-[780px]:pb-[58px]`,

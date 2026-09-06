@@ -3,6 +3,7 @@ import { drizzle } from 'drizzle-orm/neon-http';
 import { migrate } from 'drizzle-orm/neon-http/migrator';
 import { count, inArray } from 'drizzle-orm';
 import { actions, issues, orgs } from '../db/schema';
+import { organizationKey, supportersName } from '../lib/organization-names';
 
 const connectionString = process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL;
 
@@ -927,26 +928,29 @@ const seedActions: SeedAction[] = missingIssueSlugs.length === 0 ? [
 
 const existingOrganizations = await db.select({ id: orgs.id, slug: orgs.slug, name: orgs.name }).from(orgs);
 const organizationsByName = new Map(existingOrganizations.map((organization) => [organization.name, organization]));
+const organizationsByKey = new Map(existingOrganizations.map((organization) => [organizationKey(organization.name), organization]));
 const usedOrganizationSlugs = new Set(existingOrganizations.map((organization) => organization.slug));
 
 for (const action of seedActions) {
+  const organizationName = supportersName(action.organization.name);
   const organizationUpdate = {
     updatedAt: new Date(),
     ...(action.organization.website ? { website: action.organization.website } : {}),
     ...(action.organization.description ? { description: action.organization.description } : {}),
   };
 
-  let organization = organizationsByName.get(action.organization.name);
+  let organization = organizationsByName.get(organizationName) ?? organizationsByKey.get(organizationKey(organizationName));
   if (organization) {
     await db.update(orgs).set(organizationUpdate).where(inArray(orgs.id, [organization.id]));
   } else {
     [organization] = await db.insert(orgs).values({
-      name: action.organization.name,
-      slug: uniqueSeedOrganizationSlug(action.organization.name, usedOrganizationSlugs),
+      name: organizationName,
+      slug: uniqueSeedOrganizationSlug(organizationName, usedOrganizationSlugs),
       ...(action.organization.website ? { website: action.organization.website } : {}),
       ...(action.organization.description ? { description: action.organization.description } : {}),
     }).returning({ id: orgs.id, slug: orgs.slug, name: orgs.name });
     organizationsByName.set(organization.name, organization);
+    organizationsByKey.set(organizationKey(organization.name), organization);
   }
 
   const values: typeof actions.$inferInsert = {

@@ -24,13 +24,13 @@ function sidebar(details: SidebarDetails) {
     : details.leaderUrl
       ? `- [Leadership and staff](${details.leaderUrl})`
       : '';
-  const contact = [
+  const detailsList = [
     details.address ? `- **Address:** ${details.address}` : '',
     details.phone ? `- **Phone:** ${details.phone}` : '',
-    `- [Contact the organization](${details.contactUrl})`,
+    `- [Get in touch](${details.contactUrl})`,
   ].filter(Boolean).join('\n');
 
-  return `**Leadership**\n\n${leadership}\n\n**Contact**\n\n${contact}`;
+  return `**Leadership**\n\n${leadership}\n\n${detailsList}`;
 }
 
 // Details were checked against each organization's official website in September 2026.

@@ -62,6 +62,14 @@ export type PublishedOrganization = {
   actions: Array<PublicAction & { issue: string; issueSlug: string }>;
 };
 
+export type OrganizationDirectoryItem = {
+  id: number;
+  slug: string;
+  name: string;
+  website: string | null;
+  actionCount: number;
+};
+
 export type PublishedIssue = Issue & {
   actions: DirectoryAction[];
 };
@@ -470,6 +478,26 @@ export async function getPublishedOrganizationBySlug(slug: string): Promise<Publ
     .orderBy(desc(actions.urgent), asc(actions.sortOrder), asc(actions.title));
 
   return { ...organization, actions: actionRows };
+}
+
+export async function getOrganizationDirectory(): Promise<OrganizationDirectoryItem[]> {
+  const [organizationRows, actionCountRows] = await Promise.all([
+    db
+      .select({ id: orgs.id, slug: orgs.slug, name: orgs.name, website: orgs.website })
+      .from(orgs)
+      .orderBy(asc(orgs.name)),
+    db
+      .select({ organizationId: actions.orgId, actionCount: count() })
+      .from(actions)
+      .where(publicActionVisibilityCondition())
+      .groupBy(actions.orgId),
+  ]);
+  const actionCounts = new Map(actionCountRows.map((row) => [row.organizationId, row.actionCount]));
+
+  return organizationRows.map((organization) => ({
+    ...organization,
+    actionCount: actionCounts.get(organization.id) ?? 0,
+  }));
 }
 
 const organizationPublicColumns = {

@@ -2,12 +2,12 @@ import { asc, eq } from 'drizzle-orm';
 import { actions, issues, orgs } from '@/db/schema';
 import { parsePublicHttpUrl, slugifyTitle } from '@/lib/action-metadata';
 import { db } from '@/lib/db';
+import { organizationKey, supportersName } from '@/lib/organization-names';
 import { uniqueOrganizationSlug } from '@/lib/slugs';
 
 const DEFAULT_MODEL = 'gpt-5.4-mini';
 const DEFAULT_LIMIT = 3;
 const MAX_LIMIT = 10;
-const SUPPORTERS_PREFIX = 'Supporters of ';
 const ACTION_TYPES = ['Petition', 'Lawsuit', 'Campaign'] as const;
 
 type ActionType = (typeof ACTION_TYPES)[number];
@@ -115,15 +115,6 @@ function comparableText(value: string) {
     .replace(/&/g, ' and ')
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
-}
-
-function organizationKey(value: string) {
-  return comparableText(value.replace(/^supporters of\s+/i, ''));
-}
-
-function supportersName(value: string) {
-  const cleanName = inlineText(value, 160).replace(/^supporters of\s+/i, '');
-  return `${SUPPORTERS_PREFIX}${cleanName || 'an unnamed organization'}`;
 }
 
 function websiteKey(value: string | null | undefined) {

@@ -59,6 +59,7 @@ export default async function OrganizationPage({ params }: OrganizationPageProps
           <nav className={s.breadcrumb} aria-label="Breadcrumb">
             <ol>
               <li><Link href="/">All actions</Link></li>
+              <li><Link href="/orgs">Orgs</Link></li>
               <li aria-current="page"><span>{organization.name}</span></li>
             </ol>
           </nav>
@@ -83,11 +84,11 @@ export default async function OrganizationPage({ params }: OrganizationPageProps
       {(organization.description || organization.sidebar) && (
         <section className={s.orgDescriptionShell}>
           <div>
-            <p className={s.eyebrow}><span /> ABOUT</p>
+            <p className={s.eyebrow}><span /> CONTACT</p>
             {organization.sidebar && <div className={s.markdownContent}><Markdown remarkPlugins={[remarkGfm]}>{organization.sidebar}</Markdown></div>}
           </div>
           <article className={s.descriptionContent}>
-            <p className={s.eyebrow}><span /> WHO THEY ARE</p>
+            <p className={s.eyebrow}><span /> ABOUT</p>
             {organization.description && <div className={s.markdownContent}><Markdown remarkPlugins={[remarkGfm]}>{organization.description}</Markdown></div>}
           </article>
         </section>
