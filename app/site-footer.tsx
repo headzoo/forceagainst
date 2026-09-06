@@ -35,6 +35,7 @@ export function SiteFooter({ homeBrandTarget = '/' }: SiteFooterProps) {
         />
       </p>
       <div>
+        <Link href="/about">About</Link>
         <Link href="/contact">Contact</Link>
         <Link href="/government">Your Government</Link>
         <Link href="/api">API</Link>
