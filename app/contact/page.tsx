@@ -1,3 +1,4 @@
+import { cn, s } from '@/app/tailwind-styles';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SiteFooter } from '@/app/site-footer';
@@ -38,30 +39,30 @@ export default async function ContactPage({ searchParams }: ContactPageProps) {
   const error = params?.error ? errorMessages[params.error] ?? errorMessages.server : '';
 
   return (
-    <main className="contact-page">
+    <main>
       <SiteHeader />
       {sent && (
-        <div className="contact-toast contact-toast-success" role="status" aria-live="polite">
+        <div className={cn(s.contactToast, s.contactToastSuccess)} role="status" aria-live="polite">
           <strong>Message sent.</strong>
           <span>Thanks for reaching out. We’ll read it shortly.</span>
         </div>
       )}
       {error && (
-        <div className="contact-toast contact-toast-error" role="alert">
+        <div className={cn(s.contactToast, s.contactToastError)} role="alert">
           <strong>Message not sent.</strong>
           <span>{error}</span>
         </div>
       )}
 
-      <section className="contact-shell">
-        <div className="contact-heading">
-          <Link className="back-link" href="/">← Back to all actions</Link>
-          <p className="eyebrow"><span /> CONTACT</p>
-          <h1>Get in touch.</h1>
-          <p>Send corrections, questions, partnership notes, or anything else that should reach the people behind Force Against Something.</p>
+      <section className={s.contactShell}>
+        <div className={s.contactHeading}>
+          <Link className={s.backLink} href="/">← Back to all actions</Link>
+          <p className={s.eyebrow}><span /> CONTACT</p>
+          <h1 className={s.contactTitle}>Get in touch.</h1>
+          <p className={s.contactHeadingCopy}>Send corrections, questions, partnership notes, or anything else that should reach the people behind Force Against Something.</p>
         </div>
 
-        <div className="contact-panel">
+        <div className={s.contactPanel}>
           <ContactForm sent={sent} error={error} />
         </div>
       </section>

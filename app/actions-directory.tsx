@@ -1,5 +1,6 @@
 'use client';
 
+import { cn, s } from '@/app/tailwind-styles';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
@@ -139,24 +140,24 @@ export function ActionsDirectory({ issues, actions }: { issues: Issue[]; actions
     <main>
       <SiteHeader />
 
-      <section className="hero" id="top">
-        <div className="hero-copy">
-          <p className="eyebrow"><span /> PICK AN ISSUE. DO YOUR PART.</p>
-          <h1 className="hero-cta">
-            <Image className="hero-cta-image" src={ctaImage} alt="Turn concern into force." priority sizes="(max-width: 780px) calc(100vw - 40px), 48vw" />
+      <section className={s.hero} id="top">
+        <div className={s.heroCopy}>
+          <p className={s.eyebrow}><span /> PICK AN ISSUE. DO YOUR PART.</p>
+          <h1 className={s.heroCta}>
+            <Image className={s.heroCtaImage} src={ctaImage} alt="Turn concern into force." priority sizes="(max-width: 780px) calc(100vw - 40px), 48vw" />
           </h1>
-          <p className="dek">A focused directory of verified petitions, lawsuits, and campaigns fighting for the issue you choose.</p>
+          <p className={s.dek}>A focused directory of verified petitions, lawsuits, and campaigns fighting for the issue you choose.</p>
         </div>
-        <div className="issue-card">
-          <p className="issue-card-prompt" id="issue-picker-label">What are you fighting for?</p>
+        <div className={s.issueCard}>
+          <p className={s.issueCardPrompt} id="issue-picker-label">What are you fighting for?</p>
           {issueSlug === null ? (
-            <div className="issue-options issue-options-loading" aria-hidden="true">
+            <div className={cn(s.issueOptions, s.issueOptionsLoading)} aria-hidden="true">
               {Array.from({ length: Math.max(minimumIssuePlaceholderCount, issues.length) }, (_, index) => (
-                <span className="issue-option-placeholder" key={index} />
+                <span className={s.issueOptionPlaceholder} key={index} />
               ))}
             </div>
           ) : selectedIssue && (
-            <div className="issue-options" role="group" aria-labelledby="issue-picker-label">
+            <div className={s.issueOptions} role="group" aria-labelledby="issue-picker-label">
               {issues.map((issue) => {
                 const isSelected = selectedIssue.id === issue.id;
                 const isPlanned = issue.status === 'planned';
@@ -164,7 +165,7 @@ export function ActionsDirectory({ issues, actions }: { issues: Issue[]; actions
                   <button
                     key={issue.id}
                     type="button"
-                    className={`issue-option${isSelected ? ' active' : ''}`}
+                    className={cn(s.issueOption, isSelected && s.issueOptionActive)}
                     disabled={isPlanned}
                     aria-pressed={isSelected}
                     aria-label={`${issue.name}${isPlanned ? ' coming next' : ''}`}
@@ -181,19 +182,19 @@ export function ActionsDirectory({ issues, actions }: { issues: Issue[]; actions
       </section>
 
       {selectedIssue && (
-        <section className="actions-section" id="actions">
-          <div className="section-heading">
-            <div><p className="eyebrow"><span /> CURRENT FOCUS</p><h2 className="homepage-issue-heading"><Link className="issue-heading-link" href={`/i/${selectedIssue.slug}`}>{selectedIssueHeading?.headingStart}<span className="heading-end-lockup">{selectedIssueHeading?.headingEnd}<Image className="heading-end-star" src="/homepage-issue-heading-star.png" alt="" width={99} height={99} aria-hidden="true" unoptimized /></span></Link></h2></div>
+        <section className={s.actionsSection} id="actions">
+          <div className={s.sectionHeading}>
+            <div><p className={s.eyebrow}><span /> CURRENT FOCUS</p><h2 className={s.homepageIssueHeading}><Link className={s.issueHeadingLink} href={`/i/${selectedIssue.slug}`}>{selectedIssueHeading?.headingStart}<span className={s.headingEndLockup}>{selectedIssueHeading?.headingEnd}<Image className={s.headingEndStar} src="/homepage-issue-heading-star.png" alt="" width={99} height={99} aria-hidden="true" unoptimized /></span></Link></h2></div>
             <p>Every listing gives you the context, organization, and direct path you need to act. We check ownership, activity, and a clear path to impact.</p>
           </div>
-          <div className="filter-row" role="group" aria-label="Filter actions by type">
-            {filters.map((item) => <button key={item} onClick={() => setFilter(item)} className={filter === item ? 'active' : ''} aria-pressed={filter === item}>{item} {item !== 'All' && <sup>{issueActions.filter((action) => action.type === item).length}</sup>}</button>)}
+          <div className={s.filterRow} role="group" aria-label="Filter actions by type">
+            {filters.map((item) => <button key={item} onClick={() => setFilter(item)} className={filter === item ? s.filterActive : undefined} aria-pressed={filter === item}>{item} {item !== 'All' && <sup>{issueActions.filter((action) => action.type === item).length}</sup>}</button>)}
           </div>
-          <div className="action-list" aria-live="polite">
+          <div aria-live="polite">
             {visible.map((action) => (
-              <article className="action-card" key={action.id}>
-                <div className="card-main">
-                  <div className="action-title-row">
+              <article className={s.actionCard} key={action.id}>
+                <div className={s.cardMain}>
+                  <div className={s.actionTitleRow}>
                     {session && (
                       <LikeButton
                         actionTitle={action.title}
@@ -205,20 +206,20 @@ export function ActionsDirectory({ issues, actions }: { issues: Issue[]; actions
                     <h3><Link href={`/a/${action.issueSlug}/${action.slug}`}>{action.title}</Link></h3>
                   </div>
                   <p>{action.detail}</p>
-                  <span className="organization">
-                    <span className="type-pill">{action.type}</span>{action.urgent && <span className="type-pill urgent">Priority</span>} <span className="organization-prefix">BY</span> <Link href={`/o/${action.organizationSlug}`}>{action.organization.toUpperCase()}</Link>
+                  <span className={s.organization}>
+                    <span className={s.typePill}>{action.type}</span>{action.urgent && <span className={cn(s.typePill, s.typePillUrgent)}>Priority</span>} <span className={s.organizationPrefix}>BY</span> <Link href={`/o/${action.organizationSlug}`}>{action.organization.toUpperCase()}</Link>
                   </span>
                 </div>
-                <div className="card-action"><Link href={`/a/${action.issueSlug}/${action.slug}`} aria-label={`Learn more and take action: ${action.title}`}>TAKE ACTION</Link><span>{action.effort}</span></div>
+                <div className={s.cardAction}><Link href={`/a/${action.issueSlug}/${action.slug}`} aria-label={`Learn more and take action: ${action.title}`}>TAKE ACTION</Link><span>{action.effort}</span></div>
               </article>
             ))}
-            {visible.length === 0 && <p className="empty-state">No published actions match this filter yet.</p>}
-            {likeError && <p className="like-error" role="alert">{likeError}</p>}
+            {visible.length === 0 && <p className={s.emptyState}>No published actions match this filter yet.</p>}
+            {likeError && <p className={s.likeError} role="alert">{likeError}</p>}
           </div>
         </section>
       )}
 
-      <section className="trust-band"><div className="trust-mark" aria-hidden="true"><span>✓</span></div><div><p className="eyebrow"><span /> OUR STANDARD</p><h2>Curated for action,<br />not attention.</h2></div><p>We prioritize credible organizations, active efforts, transparent asks, and direct links. No outrage bait. No pay-to-play placement. Just useful ways to help.</p></section>
+      <section className={s.trustBand}><div className={s.trustMark} aria-hidden="true"><span>✓</span></div><div><p className={s.eyebrowLight}><span /> OUR STANDARD</p><h2>Curated for action,<br />not attention.</h2></div><p>We prioritize credible organizations, active efforts, transparent asks, and direct links. No outrage bait. No pay-to-play placement. Just useful ways to help.</p></section>
       <SiteFooter homeBrandTarget="#top" />
     </main>
   );

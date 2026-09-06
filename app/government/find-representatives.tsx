@@ -1,5 +1,6 @@
 'use client';
 
+import { s } from '@/app/tailwind-styles';
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { normalizeStreetAddress } from '@/lib/civic-district';
 import type { PublicCongressMember } from '@/lib/db';
@@ -300,17 +301,17 @@ export function FindRepresentatives() {
   }
 
   return (
-    <section className="government-finder-panel" aria-labelledby="government-finder-heading">
-      <p className="step">ADDRESS LOOKUP / 01</p>
+    <section className={s.governmentFinderPanel} aria-labelledby="government-finder-heading">
+      <p className={s.step}>ADDRESS LOOKUP / 01</p>
       <h2 id="government-finder-heading">Find your<br />representatives.</h2>
       <p>
         Enter a complete U.S. street address with city, state, and ZIP. A ZIP code alone is not enough to determine your congressional district.
       </p>
 
-      <form className="government-finder-form" onSubmit={handleSubmit} noValidate>
+      <form className={s.governmentFinderForm} onSubmit={handleSubmit} noValidate>
         <label htmlFor="government-address">
           Street address
-          <div className="government-address-combobox" ref={comboboxRef}>
+          <div className={s.governmentAddressCombobox} ref={comboboxRef}>
             <input
               id="government-address"
               ref={addressInputRef}
@@ -338,7 +339,7 @@ export function FindRepresentatives() {
               disabled={locked || status === 'loading' || resolvingPlace}
             />
             {showSuggestions && (
-              <ul className="government-address-panel" id={listId} role="listbox">
+              <ul className={s.governmentAddressPanel} id={listId} role="listbox">
                 {suggestions.map((suggestion, index) => (
                   <li key={suggestion.placeId} role="presentation">
                     <button
@@ -346,7 +347,7 @@ export function FindRepresentatives() {
                       type="button"
                       role="option"
                       aria-selected={activeIndex === index}
-                      className={activeIndex === index ? 'active' : ''}
+                      className={activeIndex === index ? s.governmentAddressActive : undefined}
                       onMouseEnter={() => setActiveIndex(index)}
                       onClick={() => void selectSuggestion(suggestion)}
                     >
@@ -359,39 +360,39 @@ export function FindRepresentatives() {
             )}
           </div>
         </label>
-        <p id="government-address-help" className="government-finder-help">
+        <p id="government-address-help" className={s.governmentFinderHelp}>
           Include street number, street name, city, state, and ZIP. Start typing to search suggested U.S. street addresses. PO boxes and ZIP-only lookups cannot be matched to a district.
         </p>
 
         {locked ? (
-          <button className="form-submit" type="button" onClick={clearAddress}>
+          <button className={s.formSubmit} type="button" onClick={clearAddress}>
             CLEAR ADDRESS <span aria-hidden="true">→</span>
           </button>
         ) : (
-          <button className="form-submit" type="submit" disabled={status === 'loading' || resolvingPlace || !address.trim()} aria-busy={status === 'loading' || resolvingPlace}>
+          <button className={s.formSubmit} type="submit" disabled={status === 'loading' || resolvingPlace || !address.trim()} aria-busy={status === 'loading' || resolvingPlace}>
             {status === 'loading' ? 'LOOKING UP DISTRICT' : 'FIND REPRESENTATIVES'} <span aria-hidden="true">→</span>
           </button>
         )}
       </form>
 
-      <div className="government-finder-status" aria-live="polite" aria-atomic="true">
+      <div className={s.governmentFinderStatus} aria-live="polite" aria-atomic="true">
         {status === 'loading' && <p role="status">Looking up your congressional district…</p>}
-        {status === 'error' && error && <p className="form-error" role="alert">{error}</p>}
+        {status === 'error' && error && <p className={s.formError} role="alert">{error}</p>}
         {status === 'success' && result && (
           <p role="status">Found congressional district {result.districtLabel}.</p>
         )}
       </div>
 
       {status === 'success' && result && (
-        <div className="government-finder-results">
-          <p className="government-finder-district">
+        <div className={s.governmentFinderResults}>
+          <p className={s.governmentFinderDistrict}>
             <strong>District:</strong> {result.districtLabel}
           </p>
 
-          <div className="government-finder-group">
+          <div className={s.governmentFinderGroup}>
             <h3>U.S. House</h3>
             {result.houseVacant || !result.representative ? (
-              <p className="government-finder-vacant">
+              <p className={s.governmentFinderNote}>
                 This House seat is currently vacant or not yet listed in our roster.
               </p>
             ) : (
@@ -399,18 +400,18 @@ export function FindRepresentatives() {
             )}
           </div>
 
-          <div className="government-finder-group">
+          <div className={s.governmentFinderGroup}>
             <h3>U.S. Senate</h3>
             {!result.senateApplies ? (
-              <p className="government-finder-note">
+              <p className={s.governmentFinderNote}>
                 {result.jurisdiction.state === 'DC'
                   ? 'The District of Columbia does not have voting representation in the U.S. Senate.'
                   : 'U.S. territories and the District of Columbia do not have senators in the U.S. Senate.'}
               </p>
             ) : result.senators.length === 0 ? (
-              <p className="government-finder-vacant">Senate seats for this state are not yet listed in our roster.</p>
+              <p className={s.governmentFinderNote}>Senate seats for this state are not yet listed in our roster.</p>
             ) : (
-              <div className="congress-member-grid">
+              <div className={s.congressMemberGrid}>
                 {result.senators.map((senator) => (
                   <CongressMemberCard key={senator.bioguideId} member={senator} />
                 ))}

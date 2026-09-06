@@ -1,5 +1,6 @@
 'use client';
 
+import { cn, s } from '@/app/tailwind-styles';
 import Image from 'next/image';
 import Link from 'next/link';
 import { type FormEvent, useState } from 'react';
@@ -118,24 +119,24 @@ export function AccountSettings() {
   }
 
   return (
-    <main className="settings-page">
+    <main>
       <SiteHeader />
-      <section className="settings-shell">
-        <div className="settings-heading">
-          <p className="eyebrow"><span /> ACCOUNT</p>
-          <h1>Your<br /><em>profile.</em></h1>
-          <p>Keep your member details and password up to date.</p>
-          <Link href="/">← Back to the directory</Link>
+      <section className={s.settingsShell}>
+        <div className={s.settingsHeading}>
+          <p className={s.eyebrow}><span /> ACCOUNT</p>
+          <h1 className={s.settingsTitle}>Your<br /><em>profile.</em></h1>
+          <p className={s.settingsHeadingCopy}>Keep your member details and password up to date.</p>
+          <Link className={s.settingsHeadingLink} href="/">← Back to the directory</Link>
         </div>
-        <div className="settings-panel">
-          {isPending && <p className="settings-message">Checking your account…</p>}
-          {!isPending && !session && <div className="settings-message"><h2>Sign in first.</h2><p>You need an account to manage these settings.</p><AuthControl /></div>}
+        <div className={s.settingsPanel}>
+          {isPending && <p className={s.settingsMessage}>Checking your account…</p>}
+          {!isPending && !session && <div className={s.settingsMessage}><h2>Sign in first.</h2><p>You need an account to manage these settings.</p><AuthControl /></div>}
           {session && (
-            <div className="settings-stack">
-              <section className="settings-form avatar-settings" aria-labelledby="avatar-settings-title">
-                <div><p className="step">AVATAR</p><h2 id="avatar-settings-title">Your picture</h2></div>
-                <div className="avatar-settings-row">
-                  <span className="account-avatar-preview" aria-hidden="true">
+            <div className={s.settingsStack}>
+              <section className={s.settingsForm} aria-labelledby="avatar-settings-title">
+                <div><p className={cn(s.step, s.settingsStep)}>AVATAR</p><h2 id="avatar-settings-title">Your picture</h2></div>
+                <div className={s.avatarSettingsRow}>
+                  <span className={s.accountAvatarPreview} aria-hidden="true">
                     <span>{session.user.name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()}</span>
                     {(() => {
                       const pendingImage = pendingAvatar?.userId === session.user.id ? pendingAvatar.image : null;
@@ -145,34 +146,34 @@ export function AccountSettings() {
                     })()}
                   </span>
                   <div>
-                    <label className="avatar-file-label">Choose a new avatar<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) void prepareAvatar(file); }} /></label>
+                    <label className={s.avatarFileLabel}>Choose a new avatar<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) void prepareAvatar(file); }} /></label>
                     <small>JPG, PNG, or WebP up to 5 MB. Images are cropped square.</small>
                   </div>
                 </div>
-                {avatarError && <p className="form-error" role="alert">{avatarError}</p>}
-                {avatarStatus && <p className="form-success" role="status">{avatarStatus}</p>}
-                <div className="avatar-settings-actions">
-                  <button className="settings-submit" type="button" disabled={savingAvatar || pendingAvatar?.userId !== session.user.id} onClick={() => { if (pendingAvatar?.userId === session.user.id) void saveAvatar(pendingAvatar.image); }}>{savingAvatar ? 'SAVING…' : 'SAVE AVATAR'} <span>→</span></button>
-                  {(pendingAvatar?.userId === session.user.id || (savedAvatar?.userId === session.user.id ? savedAvatar.image : session.user.image)) && <button className="avatar-remove" type="button" disabled={savingAvatar} onClick={() => void saveAvatar(null)}>Remove avatar</button>}
+                {avatarError && <p className={s.formError} role="alert">{avatarError}</p>}
+                {avatarStatus && <p className={s.formSuccess} role="status">{avatarStatus}</p>}
+                <div className={s.avatarSettingsActions}>
+                  <button className={s.settingsSubmit} type="button" disabled={savingAvatar || pendingAvatar?.userId !== session.user.id} onClick={() => { if (pendingAvatar?.userId === session.user.id) void saveAvatar(pendingAvatar.image); }}>{savingAvatar ? 'SAVING…' : 'SAVE AVATAR'} <span>→</span></button>
+                  {(pendingAvatar?.userId === session.user.id || (savedAvatar?.userId === session.user.id ? savedAvatar.image : session.user.image)) && <button className={s.avatarRemove} type="button" disabled={savingAvatar} onClick={() => void saveAvatar(null)}>Remove avatar</button>}
                 </div>
               </section>
-              <form className="settings-form" onSubmit={updateName}>
-                <div><p className="step">PROFILE</p><h2>Account details</h2></div>
+              <form className={s.settingsForm} onSubmit={updateName}>
+                <div><p className={cn(s.step, s.settingsStep)}>PROFILE</p><h2>Account details</h2></div>
                 <label>Email<input type="email" value={session.user.email} readOnly /></label>
                 <label>Username<input type="text" value={`@${session.user.username}`} readOnly /><small>Usernames are permanent.</small></label>
                 <label>Name<input name="name" type="text" defaultValue={session.user.name} minLength={2} maxLength={100} autoComplete="name" required /></label>
-                {nameError && <p className="form-error" role="alert">{nameError}</p>}
-                {nameStatus && <p className="form-success" role="status">{nameStatus}</p>}
-                <button className="settings-submit" type="submit" disabled={savingName}>{savingName ? 'SAVING…' : 'SAVE NAME'} <span>→</span></button>
+                {nameError && <p className={s.formError} role="alert">{nameError}</p>}
+                {nameStatus && <p className={s.formSuccess} role="status">{nameStatus}</p>}
+                <button className={s.settingsSubmit} type="submit" disabled={savingName}>{savingName ? 'SAVING…' : 'SAVE NAME'} <span>→</span></button>
               </form>
-              <form className="settings-form" onSubmit={updatePassword}>
-                <div><p className="step">SECURITY</p><h2>Change password</h2></div>
+              <form className={s.settingsForm} onSubmit={updatePassword}>
+                <div><p className={cn(s.step, s.settingsStep)}>SECURITY</p><h2>Change password</h2></div>
                 <label>Current password<input name="currentPassword" type="password" autoComplete="current-password" required /></label>
                 <label>New password<input name="newPassword" type="password" minLength={8} autoComplete="new-password" required /></label>
                 <label>Confirm new password<input name="confirmPassword" type="password" minLength={8} autoComplete="new-password" required /></label>
-                {passwordError && <p className="form-error" role="alert">{passwordError}</p>}
-                {passwordStatus && <p className="form-success" role="status">{passwordStatus}</p>}
-                <button className="settings-submit" type="submit" disabled={savingPassword}>{savingPassword ? 'CHANGING…' : 'CHANGE PASSWORD'} <span>→</span></button>
+                {passwordError && <p className={s.formError} role="alert">{passwordError}</p>}
+                {passwordStatus && <p className={s.formSuccess} role="status">{passwordStatus}</p>}
+                <button className={s.settingsSubmit} type="submit" disabled={savingPassword}>{savingPassword ? 'CHANGING…' : 'CHANGE PASSWORD'} <span>→</span></button>
               </form>
             </div>
           )}

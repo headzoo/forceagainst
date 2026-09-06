@@ -1,5 +1,6 @@
 'use client';
 
+import { cn, s } from '@/app/tailwind-styles';
 import { useEffect, useState } from 'react';
 import { SiteHeader } from '@/app/site-header';
 
@@ -49,22 +50,22 @@ export function AdminReview() {
   }
 
   return (
-    <main className="admin-page">
+    <main>
       <SiteHeader />
-      <section className="admin-shell">
-        <div className="admin-heading"><p className="eyebrow"><span /> ADMIN REVIEW</p><h1>Pending<br /><em>actions.</em></h1><p>Approving publishes the action immediately in the public directory.</p></div>
-        <div className="review-list">
-          {loading && <p className="admin-message">Loading submissions…</p>}
-          {error && <p className="admin-message form-error" role="alert">{error}</p>}
-          {!loading && !error && submissions.length === 0 && <p className="admin-message">No actions are waiting for approval.</p>}
+      <section className={s.adminShell}>
+        <div className={s.adminHeading}><p className={s.eyebrowLight}><span /> ADMIN REVIEW</p><h1 className={s.adminTitle}>Pending<br /><em>actions.</em></h1><p className={s.adminHeadingCopy}>Approving publishes the action immediately in the public directory.</p></div>
+        <div className={s.reviewList}>
+          {loading && <p className={s.adminMessage}>Loading submissions…</p>}
+          {error && <p className={cn(s.adminMessage, s.formError)} role="alert">{error}</p>}
+          {!loading && !error && submissions.length === 0 && <p className={s.adminMessage}>No actions are waiting for approval.</p>}
           {submissions.map((submission) => (
-            <article className="review-card" key={submission.id}>
-              <div className="review-meta"><span>{submission.type}</span><span>{submission.issue}</span><span>{submission.effort}</span></div>
+            <article className={s.reviewCard} key={submission.id}>
+              <div className={s.reviewMeta}><span>{submission.type}</span><span>{submission.issue}</span><span>{submission.effort}</span></div>
               <h2>{submission.title}</h2>
               <p>{submission.detail}</p>
-              <details className="review-description"><summary>Review full Markdown description</summary><pre>{submission.description}</pre></details>
+              <details className={s.reviewDescription}><summary>Review full Markdown description</summary><pre>{submission.description}</pre></details>
               <dl><div><dt>Organization</dt><dd>{submission.organization}</dd></div><div><dt>Submitted by</dt><dd>{submission.submitterName ?? 'Unknown'}{submission.submitterEmail ? ` · ${submission.submitterEmail}` : ''}</dd></div></dl>
-              <div className="review-actions"><a href={submission.href} target="_blank" rel="noreferrer">Inspect source ↗</a><button type="button" onClick={() => approve(submission.id)} disabled={approving === submission.id}>{approving === submission.id ? 'APPROVING…' : 'APPROVE & PUBLISH'}</button></div>
+              <div className={s.reviewActions}><a href={submission.href} target="_blank" rel="noreferrer">Inspect source ↗</a><button type="button" onClick={() => approve(submission.id)} disabled={approving === submission.id}>{approving === submission.id ? 'APPROVING…' : 'APPROVE & PUBLISH'}</button></div>
             </article>
           ))}
         </div>

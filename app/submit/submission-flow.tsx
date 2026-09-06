@@ -1,5 +1,6 @@
 'use client';
 
+import { cn, s } from '@/app/tailwind-styles';
 import Link from 'next/link';
 import { type FormEvent, useEffect, useState } from 'react';
 import { AuthControl } from '@/app/auth-control';
@@ -121,56 +122,56 @@ export function SubmissionFlow({ issues }: { issues: IssueOption[] }) {
   const ready = Boolean(session && account?.organization);
 
   return (
-    <main className="submission-page">
+    <main>
       <SiteHeader showSubmitLink={false} />
 
-      <section className="submission-shell">
-        <div className="submission-heading">
-          <p className="eyebrow"><span /> SUBMIT AN ACTION</p>
-          <h1>Add a way<br />to <em>act.</em></h1>
-          <p>Every submission is reviewed by an admin before it appears in the directory.</p>
-          <Link href="/">← Back to the directory</Link>
+      <section className={s.submissionShell}>
+        <div className={s.submissionHeading}>
+          <p className={s.eyebrow}><span /> SUBMIT AN ACTION</p>
+          <h1 className={s.submissionTitle}>Add a way<br />to <em>act.</em></h1>
+          <p className={s.submissionHeadingCopy}>Every submission is reviewed by an admin before it appears in the directory.</p>
+          <Link className={s.submissionHeadingLink} href="/">← Back to the directory</Link>
         </div>
 
-        <div className="submission-panel">
-          {(sessionPending || loadingAccount) && <div className="submission-status"><p>Checking your account…</p></div>}
+        <div className={s.submissionPanel}>
+          {(sessionPending || loadingAccount) && <div className={s.submissionStatus}><p className={s.submissionStatusCopy}>Checking your account…</p></div>}
 
           {signedOut && (
-            <div className="submission-status">
-              <p className="step">STEP 01 / ACCOUNT</p>
+            <div className={s.submissionStatus}>
+              <p className={cn(s.step, s.submissionStep)}>STEP 01 / ACCOUNT</p>
               <h2>Sign in first.</h2>
-              <p>Only authenticated members can create organizations and submit actions.</p>
+              <p className={s.submissionStatusCopy}>Only authenticated members can create organizations and submit actions.</p>
               <AuthControl />
             </div>
           )}
 
           {needsOrganization && (
-            <div className="submission-status">
-              <p className="step">STEP 01 / ORGANIZATION</p>
+            <div className={s.submissionStatus}>
+              <p className={cn(s.step, s.submissionStep)}>STEP 01 / ORGANIZATION</p>
               <h2>Create your organization.</h2>
-              <p>Actions belong to organizations. Add yours on the organization page before continuing.</p>
-              <Link className="form-submit" href="/organization">CREATE ORGANIZATION <span>→</span></Link>
+              <p className={s.submissionStatusCopy}>Actions belong to organizations. Add yours on the organization page before continuing.</p>
+              <Link className={s.formSubmit} href="/organization">CREATE ORGANIZATION <span>→</span></Link>
             </div>
           )}
 
           {ready && !submittedTitle && !preview && (
-            <form className="submission-form url-first-form" onSubmit={analyzeHref}>
-              <p className="step">STEP 01 / ACTION LINK</p>
+            <form className={s.submissionForm} onSubmit={analyzeHref}>
+              <p className={cn(s.step, s.submissionStep)}>STEP 01 / ACTION LINK</p>
               <h2>Where can people act?</h2>
-              <p className="form-intro">Start with the public page. We’ll read it securely on our server to suggest a title, slug, and effort.</p>
+              <p className={s.formIntro}>Start with the public page. We’ll read it securely on our server to suggest a title, slug, and effort.</p>
               <label>Action URL<input name="href" type="url" value={href} onChange={(event) => setHref(event.target.value)} placeholder="https://example.org/take-action" required autoFocus /></label>
-              {error && <p className="form-error" role="alert">{error}</p>}
-              <button className="form-submit" type="submit" disabled={working}>{working ? 'READING PAGE…' : 'CONTINUE'} <span>→</span></button>
+              {error && <p className={s.formError} role="alert">{error}</p>}
+              <button className={s.formSubmit} type="submit" disabled={working}>{working ? 'READING PAGE…' : 'CONTINUE'} <span>→</span></button>
             </form>
           )}
 
           {ready && !submittedTitle && preview && (
-            <form className="submission-form" onSubmit={submitAction}>
-              <p className="step">STEP 02 / ACTION DETAILS</p>
-              <div className="form-title-row"><h2>Check the details.</h2><button type="button" onClick={() => { setPreview(null); setError(''); }}>Change link</button></div>
-              <p className="form-intro">Submitting as <strong>{account?.organization?.name}</strong>. The final slug is generated automatically.</p>
+            <form className={s.submissionForm} onSubmit={submitAction}>
+              <p className={cn(s.step, s.submissionStep)}>STEP 02 / ACTION DETAILS</p>
+              <div className={s.formTitleRow}><h2>Check the details.</h2><button type="button" onClick={() => { setPreview(null); setError(''); }}>Change link</button></div>
+              <p className={s.formIntro}>Submitting as <strong>{account?.organization?.name}</strong>. The final slug is generated automatically.</p>
               <label>Action URL<input name="href" type="url" value={href} readOnly /></label>
-              <div className="form-grid">
+              <div className={s.formGrid}>
                 <label>Type<select name="type" required defaultValue="Petition"><option>Petition</option><option>Lawsuit</option><option>Campaign</option></select></label>
                 <label>Issue<select name="issueId" required defaultValue={issues[0]?.id}>{issues.map((issue) => <option key={issue.id} value={issue.id}>{issue.name}</option>)}</select></label>
               </div>
@@ -179,17 +180,17 @@ export function SubmissionFlow({ issues }: { issues: IssueOption[] }) {
               <label>Summary<textarea name="detail" value={detail} onChange={(event) => setDetail(event.target.value)} minLength={20} maxLength={600} rows={4} required /><small>Shown on the homepage action card.</small></label>
               <label>Full description (Markdown)<textarea name="description" value={description} onChange={(event) => setDescription(event.target.value)} minLength={20} maxLength={1000000} rows={14} required /><small>Shown on the action detail page. Markdown headings, lists, links, and tables are supported.</small></label>
               <label>Effort<input value={preview.effort} readOnly /><small>Determined from the linked page and rechecked on submission.</small></label>
-              {error && <p className="form-error" role="alert">{error}</p>}
-              <button className="form-submit" type="submit" disabled={working || issues.length === 0}>{working ? 'VERIFYING…' : 'SUBMIT FOR APPROVAL'} <span>→</span></button>
+              {error && <p className={s.formError} role="alert">{error}</p>}
+              <button className={s.formSubmit} type="submit" disabled={working || issues.length === 0}>{working ? 'VERIFYING…' : 'SUBMIT FOR APPROVAL'} <span>→</span></button>
             </form>
           )}
 
           {submittedTitle && (
-            <div className="submission-status success-status">
-              <p className="step">SUBMISSION RECEIVED</p>
+            <div className={s.submissionStatus}>
+              <p className={cn(s.step, s.submissionStep)}>SUBMISSION RECEIVED</p>
               <h2>Now under review.</h2>
-              <p><strong>{submittedTitle}</strong> was sent to an admin. It will stay out of the public directory until it is manually approved.</p>
-              <div className="success-actions"><Link className="form-submit" href="/">RETURN TO DIRECTORY <span>→</span></Link><button type="button" onClick={() => { setSubmittedTitle(''); setPreview(null); setHref(''); setTitle(''); setDetail(''); setDescription(''); }}>Submit another</button></div>
+              <p className={s.submissionStatusCopy}><strong>{submittedTitle}</strong> was sent to an admin. It will stay out of the public directory until it is manually approved.</p>
+              <div className={s.successActions}><Link className={cn(s.formSubmit, s.successFormSubmit)} href="/">RETURN TO DIRECTORY <span>→</span></Link><button type="button" onClick={() => { setSubmittedTitle(''); setPreview(null); setHref(''); setTitle(''); setDetail(''); setDescription(''); }}>Submit another</button></div>
             </div>
           )}
         </div>

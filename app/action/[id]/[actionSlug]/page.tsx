@@ -1,3 +1,4 @@
+import { cn, s } from '@/app/tailwind-styles';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -74,55 +75,55 @@ export default async function ActionPage({ params }: ActionPageProps) {
   const { titleStart, titleEnd } = splitTitleEnding(action.title);
 
   return (
-    <main className="action-detail-page">
+    <main>
       <SiteHeader />
 
-      <section className="action-detail-hero">
-        <div className="action-detail-heading">
-          <nav className="breadcrumb" aria-label="Breadcrumb">
+      <section className={s.actionDetailHero}>
+        <div className={s.actionDetailHeading}>
+          <nav className={s.breadcrumb} aria-label="Breadcrumb">
             <ol>
               <li><Link href="/">All actions</Link></li>
               <li><Link href={`/i/${action.issueSlug}`}>{action.issue}</Link></li>
               <li aria-current="page"><span>{action.title}</span></li>
             </ol>
           </nav>
-          <div className="action-detail-badges">
+          <div className={s.actionDetailBadges}>
             <ActionLikeButton actionId={action.id} actionTitle={action.title} />
-            <span className="action-detail-pill-row">
-              <span className="type-pill">{action.type}</span>
-              {action.urgent && <span className="type-pill urgent">Priority</span>}
+            <span className={s.actionDetailPillRow}>
+              <span className={s.typePill}>{action.type}</span>
+              {action.urgent && <span className={cn(s.typePill, s.typePillUrgent)}>Priority</span>}
             </span>
           </div>
-          <h1>
-            {titleStart}<span className="action-detail-title-ending">{titleEnd}<Image className="action-detail-title-star" src="/action-detail-title-star.png" alt="" width={99} height={99} aria-hidden="true" unoptimized /></span>
+          <h1 className={s.actionDetailTitle}>
+            {titleStart}<span className={s.actionDetailTitleEnding}>{titleEnd}<Image className={s.actionDetailTitleStar} src="/action-detail-title-star.png" alt="" width={99} height={99} aria-hidden="true" unoptimized /></span>
           </h1>
-          <p>{action.detail}</p>
-          <span className="organization">BY <Link href={`/o/${action.organizationSlug}`}>{action.organization.toUpperCase()}</Link></span>
+          <p className={s.actionDetailSummary}>{action.detail}</p>
+          <span className={s.organization}>BY <Link href={`/o/${action.organizationSlug}`}>{action.organization.toUpperCase()}</Link></span>
         </div>
-        <aside className="action-detail-cta">
-          <p className="step">READY TO HELP?</p>
+        <aside className={s.actionDetailCta}>
+          <p className={s.step}>READY TO HELP?</p>
           <h2>Make your<br />move.</h2>
-          <p>You’ll continue on <Link className="organization-inline-link" href={`/o/${action.organizationSlug}`}>{action.organization}</Link>’s website.</p>
-          <a className="primary-button" href={action.href} target="_blank" rel="noreferrer">TAKE ACTION <span aria-hidden="true">↗</span></a>
+          <p>You’ll continue on <Link className={s.organizationInlineLink} href={`/o/${action.organizationSlug}`}>{action.organization}</Link>’s website.</p>
+          <a className={s.primaryButton} href={action.href} target="_blank" rel="noreferrer">TAKE ACTION <span aria-hidden="true">↗</span></a>
           <small>{action.effort}</small>
         </aside>
       </section>
 
-      <section className="action-description-shell">
-        <div className="action-description-label">
-          <p className="eyebrow"><span /> THE DETAILS</p>
-          <ul className="action-details-list">
+      <section className={s.actionDescriptionShell}>
+        <div>
+          <p className={s.eyebrow}><span /> THE DETAILS</p>
+          <ul className={s.actionDetailsList}>
             <li><small>Issue</small><div><Link href={`/i/${action.issueSlug}`}>{action.issue}</Link></div>{action.issueDetail && <p>{action.issueDetail}</p>}</li>
-            <li><small>Link</small><div><a className="action-details-url" href={action.href} target="_blank" rel="noreferrer">{action.href}</a></div></li>
+            <li><small>Link</small><div><a className={s.actionDetailsUrl} href={action.href} target="_blank" rel="noreferrer">{action.href}</a></div></li>
             <li><small>Org</small><div><Link href={`/o/${action.organizationSlug}`}>{action.organization}</Link></div></li>
             <li><small>Type</small><div>{action.type}</div><p>{typeDescriptions[action.type]}</p></li>
             <li><small>Effort</small><div>{action.effort}</div><p>{describeEffort(action.effort)}</p></li>
             <li><small>Created</small><div>{createdDate}</div></li>
           </ul>
         </div>
-        <article className="markdown-content">
+        <article className={s.markdownContent}>
           {action.description ? <Markdown remarkPlugins={[remarkGfm]}>{action.description}</Markdown> : <p>{action.detail}</p>}
-          <a className="primary-button action-description-button" href={action.href} target="_blank" rel="noreferrer">TAKE ACTION <span aria-hidden="true">↗</span></a>
+          <a className={cn(s.primaryButton, s.actionDescriptionButton)} href={action.href} target="_blank" rel="noreferrer">TAKE ACTION <span aria-hidden="true">↗</span></a>
         </article>
       </section>
 

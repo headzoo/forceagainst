@@ -1,3 +1,4 @@
+import { s } from '@/app/tailwind-styles';
 import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -70,9 +71,9 @@ export function CongressMemberCard({ member }: CongressMemberCardProps) {
     .filter((item): item is { platform: string; href: string; icon: IconDefinition; label: string } => item !== null);
 
   return (
-    <article className="congress-member-card">
+    <article className={s.congressMemberCard}>
       {member.officialImageUrl && (
-        <div className="congress-member-photo">
+        <div className={s.congressMemberPhoto} data-member-photo>
           <Image
             src={member.officialImageUrl}
             alt={`Official portrait of ${member.officialFullName}`}
@@ -81,20 +82,20 @@ export function CongressMemberCard({ member }: CongressMemberCardProps) {
             unoptimized
           />
           {photoCredit && (
-            <p className="congress-member-photo-credit">{photoCredit}</p>
+            <p className={s.congressMemberPhotoCredit}>{photoCredit}</p>
           )}
         </div>
       )}
 
-      <div className="congress-member-body">
-        <p className="congress-member-title">{member.displayTitle}</p>
-        <h3 className="congress-member-name">{member.officialFullName}</h3>
-        <p className="congress-member-meta">
+      <div className={s.congressMemberBody}>
+        <p className={s.congressMemberTitle}>{member.displayTitle}</p>
+        <h3 className={s.congressMemberName}>{member.officialFullName}</h3>
+        <p className={s.congressMemberMeta}>
           <span>{member.party}</span>
           <span>{districtText(member)}</span>
         </p>
 
-        <ul className="congress-member-links">
+        <ul className={s.congressMemberLinks}>
           {member.officialWebsite && (
             <li>
               <a href={member.officialWebsite} target="_blank" rel="noopener noreferrer">
@@ -123,13 +124,13 @@ export function CongressMemberCard({ member }: CongressMemberCardProps) {
           )}
         </ul>
 
-        {capitolOffice && <p className="congress-member-office">{capitolOffice}</p>}
+        {capitolOffice && <p className={s.congressMemberOffice}>{capitolOffice}</p>}
         {mailingAddress && mailingAddress !== capitolOffice && (
-          <p className="congress-member-office">{mailingAddress}</p>
+          <p className={s.congressMemberOffice}>{mailingAddress}</p>
         )}
 
         {socialLinks.length > 0 && (
-          <div className="congress-member-social">
+          <div className={s.congressMemberSocial}>
             {socialLinks.map(({ platform, href, icon, label }) => (
               <a
                 key={platform}

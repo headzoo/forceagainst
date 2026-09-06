@@ -1,5 +1,6 @@
 'use client';
 
+import { cn, s } from '@/app/tailwind-styles';
 import { useEffect, useState } from 'react';
 import { authClient } from '@/lib/auth-client';
 
@@ -13,7 +14,7 @@ type LikeButtonProps = {
 export function LikeButton({ actionTitle, liked, disabled, onClick }: LikeButtonProps) {
   return (
     <button
-      className={`like-button${liked ? ' liked' : ''}`}
+      className={cn(s.likeButton, liked && s.likeButtonLiked)}
       type="button"
       aria-label={`${liked ? 'Unlike' : 'Like'} ${actionTitle}`}
       aria-pressed={liked}
@@ -81,14 +82,14 @@ export function ActionLikeButton({ actionId, actionTitle }: { actionId: number; 
   if (!session) return null;
 
   return (
-    <div className="action-detail-like">
+    <div className={s.actionDetailLike}>
       <LikeButton
         actionTitle={actionTitle}
         liked={liked}
         disabled={updating}
         onClick={toggleLike}
       />
-      {error && <p className="like-error" role="alert">{error}</p>}
+      {error && <p className={cn(s.likeError, s.actionDetailLikeError)} role="alert">{error}</p>}
     </div>
   );
 }

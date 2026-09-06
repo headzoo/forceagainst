@@ -1,5 +1,6 @@
 'use client';
 
+import { cn, s } from '@/app/tailwind-styles';
 import Link from 'next/link';
 import { type FormEvent, useEffect, useState } from 'react';
 import { AuthControl } from '@/app/auth-control';
@@ -71,45 +72,45 @@ export function OrganizationSettings() {
   const loadingOrganization = Boolean(session && loadedForUser !== session.user.id);
 
   return (
-    <main className="settings-page">
+    <main>
       <SiteHeader />
-      <section className="settings-shell">
-        <div className="settings-heading organization-heading">
-          <p className="eyebrow"><span /> ORGANIZATION</p>
-          <h1>Your<br /><em>force.</em></h1>
+      <section className={s.settingsShell}>
+        <div className={s.settingsHeading}>
+          <p className={s.eyebrow}><span /> ORGANIZATION</p>
+          <h1 className={s.settingsTitle}>Your<br /><em>force.</em></h1>
           {organization && (
-            <div className="organization-action-list">
-              <p className="step">YOUR ACTIONS / {String(actions.length).padStart(2, '0')}</p>
+            <div className={s.organizationActionList}>
+              <p className={cn(s.step, s.organizationActionListLabel)}>YOUR ACTIONS / {String(actions.length).padStart(2, '0')}</p>
               {actions.map((action, index) => (
-                <Link className="organization-action-row" href={`/organization/actions/${action.id}`} key={action.id}>
-                  <span className="organization-action-number">{String(index + 1).padStart(2, '0')}</span>
-                  <span className="organization-action-copy">
-                    <span className="organization-action-meta"><b>{action.type}</b><i>{action.approved && action.published ? 'Published' : 'Awaiting approval'}</i></span>
+                <Link className={s.organizationActionRow} href={`/organization/actions/${action.id}`} key={action.id}>
+                  <span className={s.organizationActionNumber}>{String(index + 1).padStart(2, '0')}</span>
+                  <span className={s.organizationActionCopy}>
+                    <span className={s.organizationActionMeta}><b>{action.type}</b><i>{action.approved && action.published ? 'Published' : 'Awaiting approval'}</i></span>
                     <strong>{action.title}</strong>
                     <small>{action.detail}</small>
                   </span>
-                  <span className="organization-action-arrow" aria-hidden="true">→</span>
+                  <span className={s.organizationActionArrow} aria-hidden="true">→</span>
                 </Link>
               ))}
-              {actions.length === 0 && <p className="organization-actions-empty">No actions submitted yet.</p>}
+              {actions.length === 0 && <p className={s.organizationActionsEmpty}>No actions submitted yet.</p>}
             </div>
           )}
-          <Link href="/">← Back to the directory</Link>
+          <Link className={s.settingsHeadingLink} href="/">← Back to the directory</Link>
         </div>
-        <div className="settings-panel">
-          {(isPending || loadingOrganization) && <p className="settings-message">Loading your organization…</p>}
-          {!isPending && !session && <div className="settings-message"><h2>Sign in first.</h2><p>You need an account to manage an organization.</p><AuthControl /></div>}
+        <div className={s.settingsPanel}>
+          {(isPending || loadingOrganization) && <p className={s.settingsMessage}>Loading your organization…</p>}
+          {!isPending && !session && <div className={s.settingsMessage}><h2>Sign in first.</h2><p>You need an account to manage an organization.</p><AuthControl /></div>}
           {session && !loadingOrganization && (
-            <form className="settings-form organization-form" onSubmit={saveOrganization}>
-              <div><p className="step">{organization ? 'ORGANIZATION DETAILS' : 'GET STARTED'}</p><h2>{organization ? 'Edit organization' : 'Create organization'}</h2></div>
-              <p className="settings-intro">{organization ? 'Changes update the organization name shown on all of its actions.' : 'Create an organization before submitting your first action.'}</p>
+            <form className={cn(s.settingsForm, s.organizationForm)} onSubmit={saveOrganization}>
+              <div><p className={cn(s.step, s.settingsStep)}>{organization ? 'ORGANIZATION DETAILS' : 'GET STARTED'}</p><h2>{organization ? 'Edit organization' : 'Create organization'}</h2></div>
+              <p className={s.settingsIntro}>{organization ? 'Changes update the organization name shown on all of its actions.' : 'Create an organization before submitting your first action.'}</p>
               <label>Organization name<input name="name" type="text" value={name} onChange={(event) => setName(event.target.value)} minLength={2} maxLength={120} autoComplete="organization" required autoFocus /></label>
               <label>Organization website <small>Optional</small><input name="website" type="url" value={website} onChange={(event) => setWebsite(event.target.value)} placeholder="https://example.org" /></label>
               <label>Long description <small>Optional · Markdown supported</small><textarea name="description" value={description} onChange={(event) => setDescription(event.target.value)} rows={12} maxLength={20_000} placeholder={'Tell people about your organization, its mission, and its work.\n\n## What we do\n\nUse Markdown to add headings, links, and lists.'} /></label>
-              {error && <p className="form-error" role="alert">{error}</p>}
-              {status && <p className="form-success" role="status">{status}</p>}
-              <button className="settings-submit" type="submit" disabled={saving}>{saving ? 'SAVING…' : organization ? 'SAVE ORGANIZATION' : 'CREATE ORGANIZATION'} <span>→</span></button>
-              {organization && <Link className="secondary-link" href="/submit">Submit an action →</Link>}
+              {error && <p className={s.formError} role="alert">{error}</p>}
+              {status && <p className={s.formSuccess} role="status">{status}</p>}
+              <button className={s.settingsSubmit} type="submit" disabled={saving}>{saving ? 'SAVING…' : organization ? 'SAVE ORGANIZATION' : 'CREATE ORGANIZATION'} <span>→</span></button>
+              {organization && <Link className={s.secondaryLink} href="/submit">Submit an action →</Link>}
             </form>
           )}
         </div>

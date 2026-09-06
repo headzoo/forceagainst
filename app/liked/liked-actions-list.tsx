@@ -1,5 +1,6 @@
 'use client';
 
+import { cn, s } from '@/app/tailwind-styles';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -49,7 +50,7 @@ export function LikedActionsList({ actions: initialActions }: { actions: LikedAc
 
   if (actions.length === 0) {
     return (
-      <div className="liked-empty">
+      <div className={s.likedEmpty}>
         <h2>No likes yet.</h2>
         <p>Tap the heart beside any action to keep it here for later.</p>
       </div>
@@ -58,11 +59,11 @@ export function LikedActionsList({ actions: initialActions }: { actions: LikedAc
 
   return (
     <>
-      <div className="action-list">
+      <div className={s.actionListBordered}>
         {actions.map((action) => (
-          <article className="action-card" key={action.id}>
-            <div className="card-main">
-              <div className="action-title-row">
+          <article className={s.actionCard} key={action.id}>
+            <div className={s.cardMain}>
+              <div className={s.actionTitleRow}>
                 <LikeButton
                   actionTitle={action.title}
                   liked
@@ -72,15 +73,15 @@ export function LikedActionsList({ actions: initialActions }: { actions: LikedAc
                 <h3><Link href={`/a/${action.issueSlug}/${action.slug}`}>{action.title}</Link></h3>
               </div>
               <p>{action.detail}</p>
-              <span className="organization">
-                <span className="type-pill">{action.type}</span>{action.urgent && <span className="type-pill urgent">Priority</span>} <span className="organization-prefix">BY</span> <Link href={`/o/${action.organizationSlug}`}>{action.organization.toUpperCase()}</Link> <span className="organization-separator">·</span> <Link href={`/i/${action.issueSlug}`}>{action.issue.toUpperCase()}</Link>
+              <span className={s.organization}>
+                <span className={s.typePill}>{action.type}</span>{action.urgent && <span className={cn(s.typePill, s.typePillUrgent)}>Priority</span>} <span className={s.organizationPrefix}>BY</span> <Link href={`/o/${action.organizationSlug}`}>{action.organization.toUpperCase()}</Link> <span className={s.organizationSeparator}>·</span> <Link href={`/i/${action.issueSlug}`}>{action.issue.toUpperCase()}</Link>
               </span>
             </div>
-            <div className="card-action"><Link href={`/a/${action.issueSlug}/${action.slug}`} aria-label={`Learn more and take action: ${action.title}`}>TAKE ACTION</Link><span>{action.effort}</span></div>
+            <div className={s.cardAction}><Link href={`/a/${action.issueSlug}/${action.slug}`} aria-label={`Learn more and take action: ${action.title}`}>TAKE ACTION</Link><span>{action.effort}</span></div>
           </article>
         ))}
       </div>
-      {error && <p className="like-error" role="alert">{error}</p>}
+      {error && <p className={s.likeError} role="alert">{error}</p>}
     </>
   );
 }

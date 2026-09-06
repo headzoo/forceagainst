@@ -1,3 +1,4 @@
+import { cn, s } from '@/app/tailwind-styles';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -13,13 +14,13 @@ export function SiteFooter({ homeBrandTarget = '/' }: SiteFooterProps) {
   );
 
   return (
-    <footer>
+    <footer className={s.footer}>
       {homeBrandTarget === '#top' ? (
-        <a className="brand footer-brand" href="#top" aria-label="Force Against Something home">
+        <a className={cn(s.brand, s.footerBrand)} href="#top" aria-label="Force Against Something home">
           {brand}
         </a>
       ) : (
-        <Link className="brand footer-brand" href="/" aria-label="Force Against Something home">
+        <Link className={cn(s.brand, s.footerBrand)} href="/" aria-label="Force Against Something home">
           {brand}
         </Link>
       )}

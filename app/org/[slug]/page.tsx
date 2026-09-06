@@ -1,3 +1,4 @@
+import { cn, s } from '@/app/tailwind-styles';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -36,17 +37,17 @@ export default async function OrganizationPage({ params }: OrganizationPageProps
   if (!organization) notFound();
 
   return (
-    <main className="org-detail-page">
+    <main>
       <SiteHeader />
 
-      <section className="org-detail-hero">
-        <div className="org-detail-heading">
-          <Link className="back-link" href="/">← Back to all actions</Link>
-          <p className="eyebrow"><span /> ORGANIZATION</p>
-          <h1>{organization.name}</h1>
+      <section className={s.orgDetailHero}>
+        <div className={s.orgDetailHeading}>
+          <Link className={s.backLink} href="/">← Back to all actions</Link>
+          <p className={cn(s.eyebrow, s.orgHeadingEyebrow)}><span /> ORGANIZATION</p>
+          <h1 className={s.orgDetailTitle}>{organization.name}</h1>
         </div>
-        <aside className="org-detail-website">
-          <p className="step">WEBSITE</p>
+        <aside className={s.orgDetailWebsite}>
+          <p className={s.step}>WEBSITE</p>
           {organization.website
             ? <a href={organization.website} target="_blank" rel="noreferrer">VISIT {organization.name.toUpperCase()} <span aria-hidden="true">↗</span></a>
             : <p>No website listed.</p>}
@@ -54,31 +55,31 @@ export default async function OrganizationPage({ params }: OrganizationPageProps
       </section>
 
       {organization.description && (
-        <section className="org-description-shell">
-          <div className="action-description-label"><p className="eyebrow"><span /> ABOUT</p><p>{organization.name}</p></div>
-          <article className="markdown-content"><Markdown remarkPlugins={[remarkGfm]}>{organization.description}</Markdown></article>
+        <section className={s.orgDescriptionShell}>
+          <div><p className={s.eyebrow}><span /> ABOUT</p><p>{organization.name}</p></div>
+          <article className={s.markdownContent}><Markdown remarkPlugins={[remarkGfm]}>{organization.description}</Markdown></article>
         </section>
       )}
 
-      <section className="org-actions-section">
-        <div className="section-heading">
-          <div><p className="eyebrow"><span /> THEIR WORK</p><h2>Actions</h2></div>
+      <section className={s.orgActionsSection}>
+        <div className={s.sectionHeading}>
+          <div><p className={s.eyebrow}><span /> THEIR WORK</p><h2>Actions</h2></div>
           <p>{organization.actions.length} published {organization.actions.length === 1 ? 'action' : 'actions'} from {organization.name}.</p>
         </div>
-        <div className="action-list">
+        <div>
           {organization.actions.map((action) => (
-            <article className="action-card" key={action.id}>
-              <div className="card-main">
+            <article className={s.actionCard} key={action.id}>
+              <div className={s.cardMain}>
                 <h3><Link href={`/a/${action.issueSlug}/${action.slug}`}>{action.title}</Link></h3>
                 <p>{action.detail}</p>
-                <span className="organization">
-                  <span className="type-pill">{action.type}</span>{action.urgent && <span className="type-pill urgent">Priority</span>} <Link href={`/i/${action.issueSlug}`}>{action.issue.toUpperCase()}</Link>
+                <span className={s.organization}>
+                  <span className={s.typePill}>{action.type}</span>{action.urgent && <span className={cn(s.typePill, s.typePillUrgent)}>Priority</span>} <Link href={`/i/${action.issueSlug}`}>{action.issue.toUpperCase()}</Link>
                 </span>
               </div>
-              <div className="card-action"><Link href={`/a/${action.issueSlug}/${action.slug}`} aria-label={`Learn more and take action: ${action.title}`}>TAKE ACTION <b aria-hidden="true">→</b></Link><span>{action.effort}</span></div>
+              <div className={s.cardAction}><Link href={`/a/${action.issueSlug}/${action.slug}`} aria-label={`Learn more and take action: ${action.title}`}>TAKE ACTION <b aria-hidden="true">→</b></Link><span>{action.effort}</span></div>
             </article>
           ))}
-          {organization.actions.length === 0 && <p className="empty-state">This organization has no published actions yet.</p>}
+          {organization.actions.length === 0 && <p className={s.emptyState}>This organization has no published actions yet.</p>}
         </div>
       </section>
 

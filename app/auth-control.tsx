@@ -1,5 +1,6 @@
 'use client';
 
+import { cn, s } from '@/app/tailwind-styles';
 import { type FormEvent, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { authClient } from '@/lib/auth-client';
@@ -100,14 +101,13 @@ export function AuthControl() {
   }
 
   if (!ready || sessionPending) {
-    return <span className="auth-loading" aria-label="Checking account status" />;
+    return <span className={s.authLoading} aria-label="Checking account status" />;
   }
 
   if (session) {
     return (
-      <div className="account-control" ref={menuRef}>
-        <button
-          className="account-menu-trigger"
+      <div className={s.accountControl} ref={menuRef}>
+        <button className={s.accountMenuTrigger}
           type="button"
           aria-haspopup="menu"
           aria-expanded={menuOpen}
@@ -117,8 +117,8 @@ export function AuthControl() {
           <span>{session.user.name}</span><b aria-hidden="true">⌄</b>
         </button>
         {menuOpen && (
-          <div className="account-menu" role="menu">
-            <Link className="account-menu-liked" href="/liked" role="menuitem" onClick={() => setMenuOpen(false)}>
+          <div className={s.accountMenu} role="menu">
+            <Link className={s.accountMenuLiked} href="/liked" role="menuitem" onClick={() => setMenuOpen(false)}>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21.2l7.8-7.7 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>
               Liked
             </Link>
@@ -134,14 +134,14 @@ export function AuthControl() {
 
   return (
     <>
-      <button className="auth-trigger" type="button" onClick={() => showAuth('sign-in')}>Sign in</button>
+      <button className={s.authTrigger} type="button" onClick={() => showAuth('sign-in')}>Sign in</button>
       {open && (
-        <div className="auth-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}>
-          <section className="auth-dialog" role="dialog" aria-modal="true" aria-labelledby={titleId}>
-            <button className="auth-close" type="button" onClick={() => setOpen(false)} aria-label="Close account dialog">×</button>
-            <p className="eyebrow"><span /> YOUR ACCOUNT</p>
+        <div className={s.authBackdrop} onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}>
+          <section className={s.authDialog} role="dialog" aria-modal="true" aria-labelledby={titleId}>
+            <button className={s.authClose} type="button" onClick={() => setOpen(false)} aria-label="Close account dialog">×</button>
+            <p className={cn(s.eyebrow, s.authDialogEyebrow)}><span /> YOUR ACCOUNT</p>
             <h2 id={titleId}>{mode === 'sign-up' ? 'Join the force.' : 'Welcome back.'}</h2>
-            <p className="auth-intro">
+            <p className={s.authIntro}>
               {mode === 'sign-up'
                 ? 'Create your account with an email and password.'
                 : 'Sign in to your Force Against Something account.'}
@@ -156,7 +156,7 @@ export function AuthControl() {
                   <label>
                     Username
                     <input name="username" type="text" minLength={USERNAME_MIN_LENGTH} maxLength={USERNAME_MAX_LENGTH} pattern="[A-Za-z0-9_]+" autoComplete="username" aria-describedby="username-hint" required />
-                    <small id="username-hint" className="auth-field-hint">Lowercase letters, numbers, and underscores. This cannot be changed later.</small>
+                    <small id="username-hint" className={s.authFieldHint}>Lowercase letters, numbers, and underscores. This cannot be changed later.</small>
                   </label>
                 </>
               )}
@@ -168,13 +168,13 @@ export function AuthControl() {
                 Password
                 <input name="password" type="password" autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'} minLength={8} required />
               </label>
-              {error && <p className="auth-error" role="alert">{error}</p>}
-              <button className="auth-submit" type="submit" disabled={submitting}>
+              {error && <p className={s.authError} role="alert">{error}</p>}
+              <button className={s.authSubmit} type="submit" disabled={submitting}>
                 {submitting ? 'WORKING…' : mode === 'sign-up' ? 'CREATE ACCOUNT' : 'SIGN IN'}
                 <span aria-hidden="true">→</span>
               </button>
             </form>
-            <p className="auth-switch">
+            <p className={s.authSwitch}>
               {mode === 'sign-up' ? 'Already have an account?' : 'New here?'}{' '}
               <button type="button" onClick={() => { setMode(mode === 'sign-up' ? 'sign-in' : 'sign-up'); setError(''); }}>
                 {mode === 'sign-up' ? 'Sign in' : 'Create one'}

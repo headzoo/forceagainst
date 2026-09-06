@@ -1,5 +1,6 @@
 'use client';
 
+import { cn, s } from '@/app/tailwind-styles';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -135,13 +136,12 @@ export function SiteHeader({ showSubmitLink = true }: SiteHeaderProps) {
   }
 
   return (
-    <header className="site-header">
-      <Link className="brand header-brand" href="/" aria-label="Force Against Something home">
+    <header className={s.siteHeader}>
+      <Link className={cn(s.brand, s.headerBrand)} href="/" aria-label="Force Against Something home">
         <Image src="/header-wordmark-star.png" alt="Force Against Something" width={620} height={99} priority unoptimized />
       </Link>
-      <div className={`site-search${expanded || open ? ' expanded' : ''}`} ref={rootRef}>
-        <button
-          className="site-search-toggle"
+      <div className={s.siteSearch} ref={rootRef}>
+        <button className={s.siteSearchToggle}
           type="button"
           aria-label="Search actions and organizations"
           aria-expanded={expanded || open}
@@ -156,8 +156,8 @@ export function SiteHeader({ showSubmitLink = true }: SiteHeaderProps) {
             <path d="M15.5 15.5 20 20" />
           </svg>
         </button>
-        <div className="site-search-field">
-          <label className="visually-hidden" htmlFor={`${listId}-input`}>Search</label>
+        <div className={s.siteSearchField}>
+          <label className={s.visuallyHidden} htmlFor={`${listId}-input`}>Search</label>
           <input
             id={`${listId}-input`}
             ref={inputRef}
@@ -188,15 +188,15 @@ export function SiteHeader({ showSubmitLink = true }: SiteHeaderProps) {
             onKeyDown={onKeyDown}
           />
           {showPanel && (
-            <div className="site-search-panel" id={listId} role="listbox">
-              {loading && <p className="site-search-status">Searching…</p>}
-              {!loading && error && <p className="site-search-status" role="alert">{error}</p>}
+            <div className={s.siteSearchPanel} id={listId} role="listbox">
+              {loading && <p className={s.siteSearchStatus}>Searching…</p>}
+              {!loading && error && <p className={s.siteSearchStatus} role="alert">{error}</p>}
               {!loading && !error && results && flat.length === 0 && (
-                <p className="site-search-status">No published matches.</p>
+                <p className={s.siteSearchStatus}>No published matches.</p>
               )}
               {!loading && !error && results && results.organizations.length > 0 && (
-                <div className="site-search-group">
-                  <p className="site-search-label">Organizations</p>
+                <div className={s.siteSearchGroup}>
+                  <p className={s.siteSearchLabel}>Organizations</p>
                   {results.organizations.map((item, index) => {
                     const flatIndex = index;
                     return (
@@ -206,7 +206,7 @@ export function SiteHeader({ showSubmitLink = true }: SiteHeaderProps) {
                         type="button"
                         role="option"
                         aria-selected={activeIndex === flatIndex}
-                        className={activeIndex === flatIndex ? 'active' : ''}
+                        className={activeIndex === flatIndex ? s.searchResultActive : undefined}
                         onMouseEnter={() => setActiveIndex(flatIndex)}
                         onClick={() => goTo({ kind: 'organization', item })}
                       >
@@ -218,8 +218,8 @@ export function SiteHeader({ showSubmitLink = true }: SiteHeaderProps) {
                 </div>
               )}
               {!loading && !error && results && results.actions.length > 0 && (
-                <div className="site-search-group">
-                  <p className="site-search-label">Actions</p>
+                <div className={s.siteSearchGroup}>
+                  <p className={s.siteSearchLabel}>Actions</p>
                   {results.actions.map((item, index) => {
                     const flatIndex = (results?.organizations.length ?? 0) + index;
                     return (
@@ -229,7 +229,7 @@ export function SiteHeader({ showSubmitLink = true }: SiteHeaderProps) {
                         type="button"
                         role="option"
                         aria-selected={activeIndex === flatIndex}
-                        className={activeIndex === flatIndex ? 'active' : ''}
+                        className={activeIndex === flatIndex ? s.searchResultActive : undefined}
                         onMouseEnter={() => setActiveIndex(flatIndex)}
                         onClick={() => goTo({ kind: 'action', item })}
                       >
@@ -244,12 +244,12 @@ export function SiteHeader({ showSubmitLink = true }: SiteHeaderProps) {
           )}
         </div>
       </div>
-      <div className="header-actions">
+      <div className={s.headerActions}>
         <AuthControl />
         {showSubmitLink && (
-          <Link className="submit-link" href="/submit">
-            <span className="submit-link-full">Submit an action</span>
-            <span className="submit-link-short">Add action</span>
+          <Link className={s.submitLink} href="/submit">
+            <span className={s.submitLinkFull}>Submit an action</span>
+            <span className={s.submitLinkShort}>Add action</span>
           </Link>
         )}
       </div>

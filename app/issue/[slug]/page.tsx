@@ -1,3 +1,4 @@
+import { cn, s } from '@/app/tailwind-styles';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -50,34 +51,34 @@ export default async function IssuePage({ params }: IssuePageProps) {
   }));
 
   return (
-    <main className="issue-detail-page">
+    <main>
       <SiteHeader />
 
-      <section className="org-detail-hero">
-        <div className="org-detail-heading">
-          <Link className="back-link" href="/">← Back to all actions</Link>
-          <p className="eyebrow"><span /> ISSUE</p>
-          <h1>{issue.name}</h1>
-          {issue.detail && <p className="issue-detail-summary">{issue.detail}</p>}
+      <section className={s.orgDetailHero}>
+        <div className={s.orgDetailHeading}>
+          <Link className={s.backLink} href="/">← Back to all actions</Link>
+          <p className={cn(s.eyebrow, s.orgHeadingEyebrow)}><span /> ISSUE</p>
+          <h1 className={s.orgDetailTitle}>{issue.name}</h1>
+          {issue.detail && <p className={s.issueDetailSummary}>{issue.detail}</p>}
         </div>
-        <aside className="action-detail-cta">
-          <p className="step">WAYS TO ACT</p>
+        <aside className={s.actionDetailCta}>
+          <p className={s.step}>WAYS TO ACT</p>
           <h2>{String(issue.actions.length).padStart(2, '0')}<br />{issue.actions.length === 1 ? 'action.' : 'actions.'}</h2>
           <p>Published and ready for you to make a difference.</p>
-          <a className="primary-button" href="#issue-actions">BROWSE ACTIONS <span aria-hidden="true">↓</span></a>
+          <a className={s.primaryButton} href="#issue-actions">BROWSE ACTIONS <span aria-hidden="true">↓</span></a>
         </aside>
       </section>
 
       {issue.description && (
-        <section className="org-description-shell">
-          <div className="action-description-label"><p className="eyebrow"><span /> WHY IT MATTERS</p><p>{issue.name}</p></div>
-          <article className="markdown-content"><Markdown remarkPlugins={[remarkGfm]}>{issue.description}</Markdown></article>
+        <section className={s.orgDescriptionShell}>
+          <div><p className={s.eyebrow}><span /> WHY IT MATTERS</p><p>{issue.name}</p></div>
+          <article className={s.markdownContent}><Markdown remarkPlugins={[remarkGfm]}>{issue.description}</Markdown></article>
         </section>
       )}
 
-      <section className="org-actions-section" id="issue-actions">
-        <div className="section-heading">
-          <div><p className="eyebrow"><span /> MAKE YOUR MOVE</p><h2 className="issue-page-action-heading">Take <span className="heading-end-lockup">action<Image className="heading-end-star" src="/issue-page-take-action-star.png" alt="" width={99} height={99} aria-hidden="true" unoptimized /></span></h2></div>
+      <section className={s.orgActionsSection} id="issue-actions">
+        <div className={s.sectionHeading}>
+          <div><p className={s.eyebrow}><span /> MAKE YOUR MOVE</p><h2 className={s.issuePageActionHeading}>Take <span className={s.headingEndLockup}>action<Image className={s.headingEndStar} src="/issue-page-take-action-star.png" alt="" width={99} height={99} aria-hidden="true" unoptimized /></span></h2></div>
           <p>Every listing gives you the context, organization, and direct path you need to make a difference on {issue.name}.</p>
         </div>
         <IssueActionsList actions={actions} />

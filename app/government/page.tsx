@@ -1,3 +1,4 @@
+import { cn, s } from '@/app/tailwind-styles';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SiteFooter } from '@/app/site-footer';
@@ -58,18 +59,18 @@ function RosterSection({
   const headingId = `${id}-heading`;
 
   return (
-    <section className="government-roster-section" id={id} aria-labelledby={headingId}>
-      <div className="government-roster-heading">
-        <p className="eyebrow"><span /> CURRENT ROSTER</p>
+    <section className={s.governmentRosterSection} id={id} aria-labelledby={headingId}>
+      <div className={s.governmentRosterHeading}>
+        <p className={s.eyebrow}><span /> CURRENT ROSTER</p>
         <h2 id={headingId}>{title}</h2>
         {note && <p>{note}</p>}
       </div>
 
-      <div className="government-roster-groups">
+      <div className={s.governmentRosterGroups}>
         {grouped.map(([state, stateMembers]) => (
-          <div className="government-state-group" id={`${chamberPrefix}-${state.toLowerCase()}`} key={state}>
+          <div className={s.governmentStateGroup} id={`${chamberPrefix}-${state.toLowerCase()}`} key={state}>
             <h3>{stateHeading(state)}</h3>
-            <div className="congress-member-grid">
+            <div className={s.congressMemberGrid}>
               {stateMembers.map((member) => (
                 <CongressMemberCard key={member.bioguideId} member={member} />
               ))}
@@ -89,24 +90,24 @@ export default async function GovernmentPage() {
   const houseStates = groupByState(representatives).map(([state]) => state);
 
   return (
-    <main className="government-page">
+    <main className={s.governmentPage}>
       <SiteHeader />
 
-      <section className="government-hero">
-        <div className="government-heading">
-          <Link className="back-link" href="/">← Back to all actions</Link>
-          <p className="eyebrow"><span /> YOUR GOVERNMENT</p>
-          <h1>Representatives<br />and Senators.</h1>
-          <p>
+      <section className={s.governmentHero}>
+        <div className={s.governmentHeading}>
+          <Link className={cn(s.backLink, s.governmentBackLink)} href="/">← Back to all actions</Link>
+          <p className={s.eyebrow}><span /> YOUR GOVERNMENT</p>
+          <h1 className={s.governmentTitle}>Representatives<br />and Senators.</h1>
+          <p className={s.governmentHeadingCopy}>
             Look up who represents a U.S. street address, then browse the full current congressional roster mirrored from Congress.gov.
           </p>
         </div>
         <FindRepresentatives />
       </section>
 
-      <section className="government-roster-shell" aria-labelledby="full-roster-heading">
-        <div className="government-roster-intro">
-          <p className="eyebrow"><span /> FULL ROSTER</p>
+      <section className={s.governmentRosterShell} aria-labelledby="full-roster-heading">
+        <div className={s.governmentRosterIntro}>
+          <p className={s.eyebrow}><span /> FULL ROSTER</p>
           <h2 id="full-roster-heading">Current Congress.</h2>
           <p>
             Delegates and the resident commissioner appear in the House roster. The District of Columbia and U.S. territories do not have voting senators.
@@ -114,21 +115,21 @@ export default async function GovernmentPage() {
         </div>
 
         {members.length === 0 ? (
-          <div className="government-roster-empty" role="status">
+          <div className={s.governmentRosterEmpty} role="status">
             <h3>Roster setup in progress.</h3>
             <p>
               The congressional directory has not been populated yet. Once the roster sync completes, current senators and representatives will appear here automatically.
             </p>
           </div>
         ) : (
-          <div className="government-roster-layout">
+          <div className={s.governmentRosterLayout}>
             <GovernmentRosterNav
               chambers={[
                 { id: 'us-senate', title: 'U.S. Senate', prefix: 'senate', states: senateStates },
                 { id: 'us-house', title: 'U.S. House', prefix: 'house', states: houseStates },
               ]}
             />
-            <div className="government-roster-main">
+            <div className={s.governmentRosterMain}>
               <RosterSection id="us-senate" title="U.S. Senate" chamberPrefix="senate" members={senators} />
               <RosterSection
                 id="us-house"
