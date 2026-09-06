@@ -152,77 +152,165 @@ function CommentRestrictionNotice({ message }: { message: string }) {
   );
 }
 
-function CommentItem({ node, viewerId, canComment, deletingId, onCreate, onDelete }: {
+function CommentReportForm({ commentId, onCancel, onReport }: {
+  commentId: number;
+  onCancel: () => void;
+  onReport: (commentId: number, reason: string, details: string) => Promise<void>;
+}) {
+  const [reason, setReason] = useState('spam');
+  const [details, setDetails] = useState('');
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState('');
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setWorking(true);
+    setError('');
+    try {
+      await onReport(commentId, reason, details);
+      onCancel();
+    } catch (problem) {
+      setError(problem instanceof Error ? problem.message : 'We could not submit this report.');
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  return (
+    <form className={s.commentReportForm} onSubmit={submit}>
+      <label htmlFor={`comment-report-reason-${commentId}`}>Why are you reporting this?</label>
+      <select id={`comment-report-reason-${commentId}`} value={reason} onChange={(event) => setReason(event.target.value)}>
+        <option value="spam">Spam or scam</option>
+        <option value="harassment">Harassment</option>
+        <option value="hate">Hate or abuse</option>
+        <option value="misinformation">Dangerous misinformation</option>
+        <option value="other">Something else</option>
+      </select>
+      <label htmlFor={`comment-report-details-${commentId}`}>Details <small>Optional</small></label>
+      <textarea id={`comment-report-details-${commentId}`} value={details} onChange={(event) => setDetails(event.target.value)} maxLength={1_000} rows={3} placeholder="Help the moderation team understand the problem." />
+      <div>
+        <button type="submit" disabled={working}>{working ? 'SENDING…' : 'SEND REPORT'}</button>
+        <button type="button" onClick={onCancel}>Cancel</button>
+      </div>
+      {error && <p className={s.commentError} role="alert">{error}</p>}
+    </form>
+  );
+}
+
+function CommentItem({ node, viewerId, canComment, canReport, deletingId, blockingUserId, onCreate, onDelete, onBlock, onUnblock, onReport }: {
   node: ActionCommentNode;
   viewerId: string | null;
   canComment: boolean;
+  canReport: boolean;
   deletingId: number | null;
+  blockingUserId: string | null;
   onCreate: (body: string, parentId: number | null) => Promise<void>;
   onDelete: (comment: ActionCommentView) => Promise<void>;
+  onBlock: (userId: string, username: string) => Promise<void>;
+  onUnblock: (userId: string) => Promise<void>;
+  onReport: (commentId: number, reason: string, details: string) => Promise<void>;
 }) {
   const [replying, setReplying] = useState(false);
-  const canReply = canComment && node.depth < MAX_COMMENT_DEPTH;
-  const canDelete = !node.deleted && node.author?.id === viewerId;
+  const [reporting, setReporting] = useState(false);
+  const [showBlocked, setShowBlocked] = useState(false);
+  const visible = node.visibility === 'visible';
+  const blocked = node.visibility === 'blocked';
+  const canReply = canComment && visible && node.depth < MAX_COMMENT_DEPTH;
+  const canDelete = visible && node.author?.id === viewerId;
+  const otherAuthor = node.author && node.author.id !== viewerId ? node.author : null;
+  const canBlock = Boolean(viewerId && otherAuthor && visible);
+  const canUnblock = Boolean(viewerId && otherAuthor && blocked);
+  const canSubmitReport = Boolean(canReport && otherAuthor && visible && !node.reportedByViewer);
+  const showActions = canReply || canDelete || canBlock || canUnblock || canSubmitReport || node.reportedByViewer || blocked;
+
+  const placeholder = node.visibility === 'user_deleted'
+    ? { label: 'Deleted comment', body: 'This comment has been deleted.' }
+    : node.visibility === 'under_review'
+      ? { label: 'Comment under review', body: 'This comment is temporarily unavailable while the moderation team reviews it.' }
+      : node.visibility === 'removed'
+        ? { label: 'Comment removed', body: 'This comment was removed by the moderation team.' }
+        : null;
 
   return (
-    <div className={s.commentThreadNode} data-depth={node.depth}>
+    <div className={s.commentThreadNode} id={`comment-${node.id}`} data-depth={node.depth}>
       <article className={s.commentCard}>
-        {node.deleted || !node.author ? (
+        {placeholder || !node.author ? (
           <span className={cn(s.commentAvatar, s.commentAvatarDeleted)} aria-hidden="true">×</span>
         ) : (
           <CommentAvatar name={node.author.name} image={node.author.image} />
         )}
         <div className={s.commentCopy}>
           <header>
-            {node.deleted || !node.author ? (
-              <strong>{node.deleted ? 'Deleted comment' : 'Former member'}</strong>
+            {placeholder || !node.author ? (
+              <strong>{placeholder?.label ?? 'Former member'}</strong>
             ) : (
               <span className={s.commentAuthor}><strong>{node.author.name}</strong><small>@{node.author.username}</small></span>
             )}
             <time dateTime={node.createdAt}>{formatCommentDate(node.createdAt)}</time>
           </header>
-          {node.deleted ? <p className={s.commentTombstone}>This comment has been deleted.</p> : <p>{node.body}</p>}
-          {(canReply || canDelete) && (
+          {placeholder ? (
+            <p className={s.commentTombstone}>{placeholder.body}</p>
+          ) : blocked && !showBlocked ? (
+            <p className={s.commentTombstone}>This comment is hidden because you blocked @{node.author?.username}.</p>
+          ) : (
+            <p>{node.body}</p>
+          )}
+          {showActions && (
             <div className={s.commentActions}>
               {canReply && <button type="button" onClick={() => setReplying((current) => !current)}>{replying ? 'Cancel reply' : 'Reply'}</button>}
               {canDelete && <button className={s.commentDelete} type="button" disabled={deletingId === node.id} onClick={() => onDelete(node)}>{deletingId === node.id ? 'Deleting…' : 'Delete'}</button>}
+              {blocked && <button type="button" onClick={() => setShowBlocked((current) => !current)}>{showBlocked ? 'Hide' : 'Show'}</button>}
+              {canBlock && otherAuthor && <button type="button" disabled={blockingUserId === otherAuthor.id} onClick={() => void onBlock(otherAuthor.id, otherAuthor.username)}>{blockingUserId === otherAuthor.id ? 'Blocking…' : 'Block'}</button>}
+              {canUnblock && otherAuthor && <button type="button" disabled={blockingUserId === otherAuthor.id} onClick={() => void onUnblock(otherAuthor.id)}>{blockingUserId === otherAuthor.id ? 'Unblocking…' : 'Unblock'}</button>}
+              {canSubmitReport && <button type="button" onClick={() => setReporting((current) => !current)}>{reporting ? 'Cancel report' : 'Report'}</button>}
+              {node.reportedByViewer && <span className={s.commentReported}>Reported</span>}
             </div>
           )}
+          {reporting && canSubmitReport && <CommentReportForm commentId={node.id} onCancel={() => setReporting(false)} onReport={onReport} />}
         </div>
       </article>
-      {replying && <CommentComposer parentId={node.id} autoFocus onCancel={() => setReplying(false)} onCreate={onCreate} />}
+      {replying && canReply && <CommentComposer parentId={node.id} autoFocus onCancel={() => setReplying(false)} onCreate={onCreate} />}
       {node.children.length > 0 && (
         <div className={s.commentChildren}>
-          {node.children.map((child) => <CommentItem key={child.id} node={child} viewerId={viewerId} canComment={canComment} deletingId={deletingId} onCreate={onCreate} onDelete={onDelete} />)}
+          {node.children.map((child) => <CommentItem key={child.id} node={child} viewerId={viewerId} canComment={canComment} canReport={canReport} deletingId={deletingId} blockingUserId={blockingUserId} onCreate={onCreate} onDelete={onDelete} onBlock={onBlock} onUnblock={onUnblock} onReport={onReport} />)}
         </div>
       )}
     </div>
   );
 }
 
-export function ActionComments({ actionId, initialComments }: { actionId: number; initialComments: ActionCommentView[] }) {
+export function ActionComments({ actionId, initialComments, commentsLocked = false, slowModeSeconds = 0 }: {
+  actionId: number;
+  initialComments: ActionCommentView[];
+  commentsLocked?: boolean;
+  slowModeSeconds?: number;
+}) {
   const { data: session, isPending } = authClient.useSession();
   const [comments, setComments] = useState(initialComments);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [blockingUserId, setBlockingUserId] = useState<string | null>(null);
   const [commentAccess, setCommentAccess] = useState<null | {
     userId: string;
     allowed: boolean;
     message: string | null;
   }>(null);
   const threads = useMemo(() => nestActionComments(comments), [comments]);
-  const visibleCount = comments.filter((comment) => !comment.deleted).length;
+  const visibleCount = comments.filter((comment) => comment.visibility === 'visible' || comment.visibility === 'blocked').length;
   const userId = session?.user.id ?? null;
   const emailVerified = Boolean(session?.user.emailVerified);
   const currentAccess = commentAccess?.userId === userId ? commentAccess : null;
   const accessLoading = Boolean(userId && emailVerified && !currentAccess);
-  const canComment = Boolean(userId && emailVerified && currentAccess?.allowed);
+  const canComment = Boolean(userId && emailVerified && currentAccess?.allowed && !commentsLocked);
+  const canReport = Boolean(userId && emailVerified && currentAccess?.allowed);
   const submissionBlockedReason = isPending
     ? 'Your account is still being checked. Try again in a moment.'
     : accessLoading
       ? 'Your commenting access is still being checked. Try again in a moment.'
       : currentAccess && !currentAccess.allowed
         ? currentAccess.message ?? 'Your account cannot post comments.'
-        : null;
+        : commentsLocked
+          ? 'This discussion has been locked by the moderation team.'
+          : null;
 
   useEffect(() => {
     if (!userId || !emailVerified) return;
@@ -270,13 +358,59 @@ export function ActionComments({ actionId, initialComments }: { actionId: number
       }
 
       setComments((current) => current.map((item) => item.id === comment.id
-        ? { ...item, body: null, deleted: true, author: null }
+        ? { ...item, body: null, visibility: 'user_deleted', author: null }
         : item));
     } catch {
       alert('We could not delete that comment. Check your connection and try again.');
     } finally {
       setDeletingId(null);
     }
+  }
+
+  async function blockUser(blockedUserId: string, username: string) {
+    if (!confirm(`Block @${username}? Their comments will be hidden for you.`)) return;
+    setBlockingUserId(blockedUserId);
+    try {
+      const response = await fetch(`/api/users/${encodeURIComponent(blockedUserId)}/block`, { method: 'POST' });
+      const data = await response.json().catch(() => ({})) as { error?: unknown };
+      if (!response.ok) throw new Error(String(data.error ?? 'We could not block that account.'));
+      setComments((current) => current.map((comment) => comment.author?.id === blockedUserId && comment.visibility === 'visible'
+        ? { ...comment, visibility: 'blocked' }
+        : comment));
+    } catch (problem) {
+      alert(problem instanceof Error ? problem.message : 'We could not block that account.');
+    } finally {
+      setBlockingUserId(null);
+    }
+  }
+
+  async function unblockUser(blockedUserId: string) {
+    setBlockingUserId(blockedUserId);
+    try {
+      const response = await fetch(`/api/users/${encodeURIComponent(blockedUserId)}/block`, { method: 'DELETE' });
+      const data = await response.json().catch(() => ({})) as { error?: unknown };
+      if (!response.ok) throw new Error(String(data.error ?? 'We could not unblock that account.'));
+      setComments((current) => current.map((comment) => comment.author?.id === blockedUserId && comment.visibility === 'blocked'
+        ? { ...comment, visibility: 'visible' }
+        : comment));
+    } catch (problem) {
+      alert(problem instanceof Error ? problem.message : 'We could not unblock that account.');
+    } finally {
+      setBlockingUserId(null);
+    }
+  }
+
+  async function reportComment(commentId: number, reason: string, details: string) {
+    const response = await fetch(`/api/comments/${commentId}/reports`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason, details }),
+    });
+    const data = await response.json().catch(() => ({})) as { error?: unknown };
+    if (!response.ok) throw new Error(String(data.error ?? 'We could not submit this report.'));
+    setComments((current) => current.map((comment) => comment.id === commentId
+      ? { ...comment, reportedByViewer: true }
+      : comment));
   }
 
   return (
@@ -294,6 +428,8 @@ export function ActionComments({ actionId, initialComments }: { actionId: number
             onCreate={createComment}
           />
         )}
+        {commentsLocked && <CommentRestrictionNotice message="This discussion has been locked by the moderation team. Existing comments remain visible." />}
+        {!commentsLocked && slowModeSeconds > 0 && <p className={s.commentsPolicy}>Slow mode is on: one comment every {slowModeSeconds < 60 ? `${slowModeSeconds} seconds` : slowModeSeconds === 60 ? 'minute' : `${slowModeSeconds / 60} minutes`} per member.</p>}
         {!isPending && emailVerified && currentAccess && !currentAccess.allowed && <CommentRestrictionNotice message={currentAccess.message ?? 'Your account cannot post comments.'} />}
         {!isPending && session && !session.user.emailVerified && <VerifyEmailNotice email={session.user.email} />}
         {!isPending && !session && (
@@ -304,7 +440,7 @@ export function ActionComments({ actionId, initialComments }: { actionId: number
           </div>
         )}
         <div className={s.commentThreadList}>
-          {threads.map((thread) => <CommentItem key={thread.id} node={thread} viewerId={session?.user.id ?? null} canComment={canComment} deletingId={deletingId} onCreate={createComment} onDelete={deleteComment} />)}
+          {threads.map((thread) => <CommentItem key={thread.id} node={thread} viewerId={session?.user.id ?? null} canComment={canComment} canReport={canReport} deletingId={deletingId} blockingUserId={blockingUserId} onCreate={createComment} onDelete={deleteComment} onBlock={blockUser} onUnblock={unblockUser} onReport={reportComment} />)}
           {threads.length === 0 && <p className={s.commentsStatus}>No comments yet. Be the first to share something useful.</p>}
         </div>
       </div>

@@ -14,7 +14,8 @@ export type ActionCommentView = {
   parentId: number | null;
   depth: number;
   body: string | null;
-  deleted: boolean;
+  visibility: 'visible' | 'blocked' | 'user_deleted' | 'under_review' | 'removed';
+  reportedByViewer: boolean;
   createdAt: string;
   author: ActionCommentAuthor | null;
 };

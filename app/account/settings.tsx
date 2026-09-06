@@ -3,7 +3,7 @@
 import { cn, s } from '@/app/tailwind-styles';
 import Image from 'next/image';
 import Link from 'next/link';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import { AuthControl } from '@/app/auth-control';
 import { SiteHeader } from '@/app/site-header';
 import { authClient } from '@/lib/auth-client';
@@ -21,6 +21,55 @@ export function AccountSettings() {
   const [avatarStatus, setAvatarStatus] = useState('');
   const [avatarError, setAvatarError] = useState('');
   const [savingAvatar, setSavingAvatar] = useState(false);
+  const [blockedUsers, setBlockedUsers] = useState<Array<{ id: string; name: string; username: string; image: string | null }>>([]);
+  const [blockedUsersForUserId, setBlockedUsersForUserId] = useState<string | null>(null);
+  const [blockedUsersError, setBlockedUsersError] = useState<{ userId: string; message: string } | null>(null);
+  const [unblockingUserId, setUnblockingUserId] = useState<string | null>(null);
+  const blockedUsersLoading = Boolean(session?.user.id && blockedUsersForUserId !== session.user.id && blockedUsersError?.userId !== session.user.id);
+  const currentBlockedUsersError = blockedUsersError && blockedUsersError.userId === session?.user.id ? blockedUsersError.message : '';
+
+  useEffect(() => {
+    if (!session?.user.id) return;
+
+    let active = true;
+    const userId = session.user.id;
+    fetch('/api/account/blocked-users', { cache: 'no-store' })
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({})) as {
+          error?: unknown;
+          blockedUsers?: Array<{ id: string; name: string; username: string; image: string | null }>;
+        };
+        if (!response.ok) throw new Error(String(data.error ?? 'We could not load your blocked accounts.'));
+        return data.blockedUsers ?? [];
+      })
+      .then((users) => {
+        if (active) {
+          setBlockedUsers(users);
+          setBlockedUsersForUserId(userId);
+          setBlockedUsersError(null);
+        }
+      })
+      .catch((problem) => {
+        if (active) setBlockedUsersError({ userId, message: problem instanceof Error ? problem.message : 'We could not load your blocked accounts.' });
+      });
+
+    return () => { active = false; };
+  }, [session?.user.id]);
+
+  async function unblockUser(userId: string) {
+    setUnblockingUserId(userId);
+    setBlockedUsersError(null);
+    try {
+      const response = await fetch(`/api/users/${encodeURIComponent(userId)}/block`, { method: 'DELETE' });
+      const data = await response.json().catch(() => ({})) as { error?: unknown };
+      if (!response.ok) throw new Error(String(data.error ?? 'We could not unblock that account.'));
+      setBlockedUsers((current) => current.filter((blockedUser) => blockedUser.id !== userId));
+    } catch (problem) {
+      setBlockedUsersError({ userId: session!.user.id, message: problem instanceof Error ? problem.message : 'We could not unblock that account.' });
+    } finally {
+      setUnblockingUserId(null);
+    }
+  }
 
   async function prepareAvatar(file: File) {
     setAvatarError('');
@@ -166,6 +215,27 @@ export function AccountSettings() {
                 {nameStatus && <p className={s.formSuccess} role="status">{nameStatus}</p>}
                 <button className={s.settingsSubmit} type="submit" disabled={savingName}>{savingName ? 'SAVING…' : 'SAVE NAME'} <span>→</span></button>
               </form>
+              <section className={s.settingsForm} aria-labelledby="blocked-accounts-title">
+                <div><p className={cn(s.step, s.settingsStep)}>COMMENTS</p><h2 id="blocked-accounts-title">Blocked accounts</h2></div>
+                <p className={s.settingsIntro}>Comments from blocked accounts are hidden for you. Blocking does not notify the other person.</p>
+                {blockedUsersLoading && <p className={s.settingsIntro}>Loading blocked accounts…</p>}
+                {currentBlockedUsersError && <p className={s.formError} role="alert">{currentBlockedUsersError}</p>}
+                {!blockedUsersLoading && blockedUsersForUserId === session.user.id && blockedUsers.length === 0 && <p className={s.settingsIntro}>You have not blocked anyone.</p>}
+                {!blockedUsersLoading && blockedUsersForUserId === session.user.id && blockedUsers.length > 0 && (
+                  <ul className={s.settingsBlockList}>
+                    {blockedUsers.map((blockedUser) => (
+                      <li key={blockedUser.id}>
+                        <span className={s.settingsBlockAvatar} aria-hidden="true">
+                          <span>{blockedUser.name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()}</span>
+                          {blockedUser.image && <Image src={blockedUser.image} alt="" fill sizes="44px" unoptimized />}
+                        </span>
+                        <span className={s.settingsBlockIdentity}><strong>{blockedUser.name}</strong><small>@{blockedUser.username}</small></span>
+                        <button type="button" disabled={unblockingUserId === blockedUser.id} onClick={() => void unblockUser(blockedUser.id)}>{unblockingUserId === blockedUser.id ? 'UNBLOCKING…' : 'UNBLOCK'}</button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
               <form className={s.settingsForm} onSubmit={updatePassword}>
                 <div><p className={cn(s.step, s.settingsStep)}>SECURITY</p><h2>Change password</h2></div>
                 <label>Current password<input name="currentPassword" type="password" autoComplete="current-password" required /></label>

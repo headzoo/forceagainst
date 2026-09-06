@@ -4,12 +4,14 @@ import { duplicateVoter } from '@/lib/comment-voters/duplicate-voter';
 import { hashNormalizedCommentBody, normalizeCommentBody } from '@/lib/comment-voters/normalize';
 import { rateLimitVoter } from '@/lib/comment-voters/rate-limit-voter';
 import { runCommentVoters } from '@/lib/comment-voters/run';
+import { threadPolicyVoter } from '@/lib/comment-voters/thread-policy-voter';
 import type { CommentVoterContext } from '@/lib/comment-voters/types';
 import { verifiedEmailVoter } from '@/lib/comment-voters/verified-email-voter';
 
 const voters = [
   verifiedEmailVoter,
   commentAccessVoter,
+  threadPolicyVoter,
   rateLimitVoter,
   contentVoter,
   duplicateVoter,

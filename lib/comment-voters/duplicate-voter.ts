@@ -16,6 +16,7 @@ export const duplicateVoter: CommentVoter = {
         eq(actionComments.normalizedBodyHash, normalizedBodyHash),
         gte(actionComments.createdAt, new Date(now.getTime() - DUPLICATE_WINDOW_MS)),
         isNull(actionComments.deletedAt),
+        eq(actionComments.moderationStatus, 'visible'),
       ))
       .limit(1);
 

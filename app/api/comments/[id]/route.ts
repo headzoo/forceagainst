@@ -1,5 +1,5 @@
-import { and, eq, isNull } from 'drizzle-orm';
-import { actionComments } from '@/db/schema';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { actionComments, commentReports } from '@/db/schema';
 import { db } from '@/lib/db';
 import { getMemberSession } from '@/lib/member';
 
@@ -25,5 +25,13 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
   )).returning({ id: actionComments.id });
 
   if (!deleted) return Response.json({ error: 'You can only delete your own comments.' }, { status: 403 });
+  await db.update(commentReports).set({
+    status: 'dismissed',
+    resolutionNote: 'Comment deleted by its author.',
+    updatedAt: new Date(),
+  }).where(and(
+    eq(commentReports.commentId, deleted.id),
+    inArray(commentReports.status, ['pending', 'reviewing']),
+  ));
   return Response.json({ id: deleted.id, deleted: true });
 }

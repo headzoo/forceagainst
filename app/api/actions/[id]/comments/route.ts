@@ -1,5 +1,5 @@
-import { and, eq } from 'drizzle-orm';
-import { actionComments, actions } from '@/db/schema';
+import { and, eq, or } from 'drizzle-orm';
+import { actionComments, actions, commentUserBlocks } from '@/db/schema';
 import { MAX_COMMENT_LENGTH } from '@/lib/action-comments';
 import { prepareCommentBody, voteOnComment } from '@/lib/comment-voters';
 import { db, getActionComments, publicActionVisibilityCondition } from '@/lib/db';
@@ -31,7 +31,8 @@ export async function GET(_request: Request, { params }: RouteContext) {
     .where(and(eq(actions.id, actionId), publicActionVisibilityCondition())).limit(1);
   if (!action) return Response.json({ error: 'That action is not available.' }, { status: 404 });
 
-  return Response.json({ comments: await getActionComments(actionId) }, {
+  const session = await getMemberSession();
+  return Response.json({ comments: await getActionComments(actionId, session?.user.id ?? null) }, {
     headers: { 'Cache-Control': 'no-store' },
   });
 }
@@ -54,11 +55,32 @@ export async function POST(request: Request, { params }: RouteContext) {
 
   let depth = 0;
   if (input.parentId !== null) {
-    const [parent] = await db.select({ actionId: actionComments.actionId, depth: actionComments.depth })
+    const [parent] = await db.select({
+      actionId: actionComments.actionId,
+      authorId: actionComments.userId,
+      depth: actionComments.depth,
+      moderationStatus: actionComments.moderationStatus,
+      deletedAt: actionComments.deletedAt,
+    })
       .from(actionComments).where(eq(actionComments.id, input.parentId)).limit(1);
 
-    if (!parent || parent.actionId !== actionId) {
+    if (!parent || parent.actionId !== actionId || parent.deletedAt || parent.moderationStatus !== 'visible') {
       return Response.json({ error: 'That reply target is not available.' }, { status: 400 });
+    }
+
+    if (parent.authorId) {
+      const [blocked] = await db.select({ blockedUserId: commentUserBlocks.blockedUserId })
+        .from(commentUserBlocks).where(or(
+          and(
+            eq(commentUserBlocks.blockerUserId, session.user.id),
+            eq(commentUserBlocks.blockedUserId, parent.authorId),
+          ),
+          and(
+            eq(commentUserBlocks.blockerUserId, parent.authorId),
+            eq(commentUserBlocks.blockedUserId, session.user.id),
+          ),
+        )).limit(1);
+      if (blocked) return Response.json({ error: 'You cannot reply to this member.' }, { status: 403 });
     }
 
     depth = parent.depth + 1;
@@ -94,6 +116,6 @@ export async function POST(request: Request, { params }: RouteContext) {
     normalizedBodyHash: preparedBody.normalizedBodyHash,
   }).returning({ id: actionComments.id });
 
-  const comment = (await getActionComments(actionId)).find((item) => item.id === created.id);
+  const comment = (await getActionComments(actionId, session.user.id)).find((item) => item.id === created.id);
   return Response.json({ comment }, { status: 201 });
 }

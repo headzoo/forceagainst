@@ -9,7 +9,8 @@ function comment(id: number, parentId: number | null, depth: number): ActionComm
     parentId,
     depth,
     body: `Comment ${id}`,
-    deleted: false,
+    visibility: 'visible',
+    reportedByViewer: false,
     createdAt: '2026-09-06T12:00:00.000Z',
     author: { id: 'user-1', name: 'Member', username: 'member', image: null },
   };

@@ -10,6 +10,7 @@ import { ActionLikeButton } from '@/app/action-like-button';
 import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
 import { getActionComments, getPublishedActionBySlugs } from '@/lib/db';
+import { getMemberSession } from '@/lib/member';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,10 +21,6 @@ const typeDescriptions = {
   Lawsuit: 'Support legal action or advocacy tied to a court case.',
   Campaign: 'Join organized pressure, volunteering, or ongoing outreach.',
 };
-
-function describeEffort(effort: string) {
-  return `Estimated time or commitment: ${effort}.`;
-}
 
 function formatCreatedDate(value: Date | string) {
   const date = value instanceof Date ? value : new Date(value);
@@ -70,7 +67,8 @@ export async function generateMetadata({ params }: ActionPageProps): Promise<Met
 export default async function ActionPage({ params }: ActionPageProps) {
   const action = await findAction(params);
   if (!action) notFound();
-  const comments = await getActionComments(action.id);
+  const session = await getMemberSession();
+  const comments = await getActionComments(action.id, session?.user.id ?? null);
   const createdDate = formatCreatedDate(action.createdAt);
   const { titleStart, titleEnd } = splitTitleEnding(action.title);
 
@@ -113,11 +111,9 @@ export default async function ActionPage({ params }: ActionPageProps) {
         <div>
           <p className={s.eyebrow}><span /> THE DETAILS</p>
           <ul className={s.actionDetailsList}>
-            <li><small>Issue</small><div><Link href={`/i/${action.issueSlug}`}>{action.issue}</Link></div>{action.issueDetail && <p>{action.issueDetail}</p>}</li>
-            <li><small>Link</small><div><a className={s.actionDetailsUrl} href={action.href} target="_blank" rel="noreferrer">{action.href}</a></div></li>
             <li><small>Org</small><div><Link href={`/o/${action.organizationSlug}`}>{action.organization}</Link></div></li>
+            <li><small>Link</small><div><a className={s.actionDetailsUrl} href={action.href} target="_blank" rel="noreferrer">{action.href}</a></div></li>
             <li><small>Type</small><div>{action.type}</div><p>{typeDescriptions[action.type]}</p></li>
-            <li><small>Effort</small><div>{action.effort}</div><p>{describeEffort(action.effort)}</p></li>
             <li><small>Created</small><div>{createdDate}</div></li>
           </ul>
         </div>
@@ -127,7 +123,7 @@ export default async function ActionPage({ params }: ActionPageProps) {
         </article>
       </section>
 
-      <ActionComments actionId={action.id} initialComments={comments} />
+      <ActionComments actionId={action.id} initialComments={comments} commentsLocked={action.commentsLocked} slowModeSeconds={action.commentSlowModeSeconds} />
 
       <SiteFooter />
     </main>

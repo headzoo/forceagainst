@@ -1,11 +1,13 @@
 import { neon } from '@neondatabase/serverless';
-import { and, asc, desc, eq, exists, getTableColumns, gte, isNull, lte, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, exists, getTableColumns, gte, isNull, lte, or, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from '@/db/schema';
 import {
   actionComments,
   actionLikes,
   actions,
+  commentReports,
+  commentUserBlocks,
   congressMembers,
   issues,
   orgs,
@@ -33,6 +35,22 @@ void _actionsSearchTsv;
 export type PublicAction = Omit<ActionRecord, 'searchTsv'>;
 export type DirectoryAction = PublicAction & { organization: string; organizationSlug: string; issueSlug: string };
 export type LikedAction = DirectoryAction & { issue: string; likedAt: Date };
+export type UserComment = {
+  id: number;
+  body: string;
+  deletedAt: Date | null;
+  createdAt: Date;
+  actionTitle: string;
+  actionSlug: string;
+  issueSlug: string;
+};
+export type UserCommentsPage = {
+  comments: UserComment[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+};
 export type PublishedOrganization = {
   id: number;
   slug: string;
@@ -244,6 +262,35 @@ export async function getLikedActions(userId: string): Promise<LikedAction[]> {
     .orderBy(desc(actionLikes.createdAt));
 }
 
+export async function getUserComments(userId: string, requestedPage: number, pageSize = 10): Promise<UserCommentsPage> {
+  const [{ total }] = await db
+    .select({ total: count() })
+    .from(actionComments)
+    .where(eq(actionComments.userId, userId));
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const page = Math.min(Math.max(1, requestedPage), totalPages);
+  const comments = await db
+    .select({
+      id: actionComments.id,
+      body: actionComments.body,
+      deletedAt: actionComments.deletedAt,
+      createdAt: actionComments.createdAt,
+      actionTitle: actions.title,
+      actionSlug: actions.slug,
+      issueSlug: issues.slug,
+    })
+    .from(actionComments)
+    .innerJoin(actions, eq(actionComments.actionId, actions.id))
+    .innerJoin(issues, eq(actions.issueId, issues.id))
+    .where(eq(actionComments.userId, userId))
+    .orderBy(desc(actionComments.createdAt), desc(actionComments.id))
+    .limit(pageSize)
+    .offset((page - 1) * pageSize);
+
+  return { comments, page, pageSize, total, totalPages };
+}
+
 export async function getActiveIssues() {
   return db
     .select({ id: issues.id, name: issues.name, slug: issues.slug })
@@ -297,14 +344,16 @@ export async function getPublishedActionBySlugs(issueSlug: string, actionSlug: s
   return action;
 }
 
-export async function getActionComments(actionId: number): Promise<ActionCommentView[]> {
-  const rows = await db
+export async function getActionComments(actionId: number, viewerId: string | null = null): Promise<ActionCommentView[]> {
+  const [rows, blockedRows, reportedRows] = await Promise.all([
+    db
     .select({
       id: actionComments.id,
       actionId: actionComments.actionId,
       parentId: actionComments.parentId,
       depth: actionComments.depth,
       body: actionComments.body,
+      moderationStatus: actionComments.moderationStatus,
       deletedAt: actionComments.deletedAt,
       createdAt: actionComments.createdAt,
       authorId: user.id,
@@ -315,19 +364,41 @@ export async function getActionComments(actionId: number): Promise<ActionComment
     .from(actionComments)
     .leftJoin(user, eq(actionComments.userId, user.id))
     .where(eq(actionComments.actionId, actionId))
-    .orderBy(asc(actionComments.createdAt), asc(actionComments.id));
+    .orderBy(asc(actionComments.createdAt), asc(actionComments.id)),
+    viewerId
+      ? db.select({ userId: commentUserBlocks.blockedUserId }).from(commentUserBlocks)
+        .where(eq(commentUserBlocks.blockerUserId, viewerId))
+      : Promise.resolve([]),
+    viewerId
+      ? db.select({ commentId: commentReports.commentId }).from(commentReports)
+        .where(and(eq(commentReports.reporterUserId, viewerId), eq(commentReports.actionId, actionId)))
+      : Promise.resolve([]),
+  ]);
+
+  const blockedUserIds = new Set(blockedRows.map((row) => row.userId));
+  const reportedCommentIds = new Set(reportedRows.map((row) => row.commentId));
 
   return rows.map((row) => {
-    const deleted = row.deletedAt !== null;
+    const visibility = row.deletedAt !== null
+      ? 'user_deleted' as const
+      : row.moderationStatus === 'under_review'
+        ? 'under_review' as const
+        : row.moderationStatus === 'removed'
+          ? 'removed' as const
+          : row.authorId && blockedUserIds.has(row.authorId)
+            ? 'blocked' as const
+            : 'visible' as const;
+    const showAuthor = visibility === 'visible' || visibility === 'blocked';
     return {
       id: row.id,
       actionId: row.actionId,
       parentId: row.parentId,
       depth: row.depth,
-      body: deleted ? null : row.body,
-      deleted,
+      body: visibility === 'visible' || visibility === 'blocked' ? row.body : null,
+      visibility,
+      reportedByViewer: reportedCommentIds.has(row.id),
       createdAt: row.createdAt.toISOString(),
-      author: deleted || !row.authorId || !row.authorName || !row.authorUsername
+      author: !showAuthor || !row.authorId || !row.authorName || !row.authorUsername
         ? null
         : {
           id: row.authorId,
