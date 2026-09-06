@@ -7,6 +7,7 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ActionComments } from '@/app/action-comments';
 import { ActionLikeButton } from '@/app/action-like-button';
+import { ActionOpenGraphPreview } from '@/app/action-open-graph-preview';
 import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
 import { getActionComments, getPublishedActionBySlugs } from '@/lib/db';
@@ -100,8 +101,12 @@ export default async function ActionPage({ params }: ActionPageProps) {
         </div>
         <aside className={s.actionDetailCta}>
           <p className={s.step}>READY TO HELP?</p>
-          <h2>Make your<br />move.</h2>
-          <p>You’ll continue on <Link className={s.organizationInlineLink} href={`/o/${action.organizationSlug}`}>{action.organization}</Link>’s website.</p>
+          {action.openGraph
+            ? <ActionOpenGraphPreview href={action.href} openGraph={action.openGraph} />
+            : <>
+              <h2>Make your<br />move.</h2>
+              <p>You’ll continue on <Link className={s.organizationInlineLink} href={`/o/${action.organizationSlug}`}>{action.organization}</Link>’s website.</p>
+            </>}
           <a className={s.primaryButton} href={action.href} target="_blank" rel="noreferrer">TAKE ACTION <span aria-hidden="true">↗</span></a>
           <small>{action.effort}</small>
         </aside>

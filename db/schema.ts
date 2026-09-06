@@ -51,6 +51,16 @@ export type CongressMemberSocialHandles = {
   tiktok?: string;
 };
 
+export type ActionOpenGraph = {
+  title?: string;
+  description?: string;
+  image?: string;
+  imageAlt?: string;
+  siteName?: string;
+  url?: string;
+  type?: string;
+};
+
 export const issues = pgTable('issues', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
   slug: text('slug').notNull().unique(),
@@ -98,6 +108,7 @@ export const actions = pgTable('actions', {
   commentsLocked: boolean('comments_locked').notNull().default(false),
   commentSlowModeSeconds: integer('comment_slow_mode_seconds').notNull().default(0),
   href: text('href').notNull(),
+  openGraph: jsonb('open_graph').$type<ActionOpenGraph>(),
   urgent: boolean('urgent').notNull().default(false),
   verified: boolean('verified').notNull().default(false),
   verifiedAt: timestamp('verified_at', { withTimezone: true }),

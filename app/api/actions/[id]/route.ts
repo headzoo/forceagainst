@@ -23,6 +23,7 @@ async function getOwnedAction(id: number, userId: string) {
       detail: actions.detail,
       description: actions.description,
       href: actions.href,
+      openGraph: actions.openGraph,
       effort: actions.effort,
       approved: actions.approved,
       published: actions.published,
@@ -91,12 +92,14 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   const urlChanged = parsedHref !== existing.href;
   let href = existing.href;
   let effort = existing.effort;
+  let openGraph = existing.openGraph;
 
   if (urlChanged) {
     try {
       const metadata = await analyzeActionHref(parsedHref);
       href = metadata.href;
       effort = metadata.effort;
+      openGraph = metadata.openGraph;
     } catch (error) {
       return Response.json({ error: error instanceof Error ? error.message : 'We could not verify that page.' }, { status: 400 });
     }
@@ -115,6 +118,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         description,
         href,
         effort,
+        openGraph,
         ...(urlChanged ? {
           approved: false,
           approvedAt: null,

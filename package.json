@@ -10,6 +10,7 @@
     "build": "next build",
     "auth:generate": "node --env-file=.env.local node_modules/auth/dist/index.mjs generate --config lib/auth.ts --output db/auth-schema.ts --adapter drizzle --dialect postgresql --yes",
     "actions:discover": "tsx --env-file=.env.local scripts/discover-actions.ts",
+    "actions:backfill-open-graph": "tsx --env-file=.env.local scripts/backfill-action-open-graph.ts",
     "government:sync": "tsx --env-file=.env.local scripts/sync-congress.ts",
     "db:generate": "node --env-file=.env.local node_modules/drizzle-kit/bin.cjs generate",
     "db:migrate": "tsx --env-file=.env.local scripts/migrate.ts",

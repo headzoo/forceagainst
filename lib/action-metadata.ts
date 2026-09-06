@@ -1,3 +1,5 @@
+import type { ActionOpenGraph } from '@/db/schema';
+
 const MAX_HTML_BYTES = 1_000_000;
 const MAX_REDIRECTS = 3;
 
@@ -6,6 +8,7 @@ export type ActionMetadata = {
   suggestedTitle: string;
   suggestedDetail: string;
   effort: string;
+  openGraph: ActionOpenGraph | null;
 };
 
 function decodeEntities(value: string) {
@@ -17,7 +20,9 @@ function decodeEntities(value: string) {
     if (entity[0] === '#') {
       const isHex = entity[1]?.toLowerCase() === 'x';
       const codePoint = Number.parseInt(entity.slice(isHex ? 2 : 1), isHex ? 16 : 10);
-      return Number.isFinite(codePoint) ? String.fromCodePoint(codePoint) : match;
+      return Number.isFinite(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff
+        ? String.fromCodePoint(codePoint)
+        : match;
     }
 
     return entities[entity.toLowerCase()] ?? match;
@@ -33,17 +38,71 @@ function firstTag(html: string, tag: 'h1' | 'h2' | 'title') {
   return match ? cleanText(match[1], 180) : '';
 }
 
-function metaContent(html: string, names: string[]) {
+function tagAttributes(tag: string) {
+  const attributes = new Map<string, string>();
+  const pattern = /([^\s=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+
+  for (const match of tag.matchAll(pattern)) {
+    attributes.set(match[1].toLowerCase(), match[2] ?? match[3] ?? match[4] ?? '');
+  }
+
+  return attributes;
+}
+
+function metaValues(html: string) {
+  const values = new Map<string, string>();
   const tags = html.match(/<meta\b[^>]*>/gi) ?? [];
 
   for (const tag of tags) {
-    const nameMatch = tag.match(/(?:name|property)\s*=\s*["']([^"']+)["']/i);
-    if (!nameMatch || !names.includes(nameMatch[1].toLowerCase())) continue;
-    const contentMatch = tag.match(/content\s*=\s*["']([^"']*)["']/i);
-    if (contentMatch) return cleanText(contentMatch[1], 320);
+    const attributes = tagAttributes(tag);
+    const key = (attributes.get('property') || attributes.get('name'))?.toLowerCase();
+    const content = attributes.get('content');
+    if (key && content !== undefined && !values.has(key)) values.set(key, content);
   }
 
+  return values;
+}
+
+function metaContent(values: Map<string, string>, names: string[], maxLength = 320) {
+  for (const name of names) {
+    const value = values.get(name);
+    if (value !== undefined) return cleanText(value, maxLength);
+  }
   return '';
+}
+
+function publicAbsoluteUrl(value: string, baseUrl: URL) {
+  if (!value) return '';
+  try {
+    return parsePublicHttpUrl(new URL(decodeEntities(value), baseUrl).toString()).toString();
+  } catch {
+    return '';
+  }
+}
+
+export function extractActionOpenGraph(html: string, baseUrl: URL): ActionOpenGraph | null {
+  const values = metaValues(html);
+  const openGraph: ActionOpenGraph = {};
+  const title = metaContent(values, ['og:title'], 300);
+  const description = metaContent(values, ['og:description'], 1_000);
+  const image = publicAbsoluteUrl(
+    metaContent(values, ['og:image:secure_url', 'og:image:url', 'og:image'], 2_048),
+    baseUrl,
+  );
+  const imageAlt = metaContent(values, ['og:image:alt'], 300);
+  const siteName = metaContent(values, ['og:site_name'], 160);
+  const url = publicAbsoluteUrl(metaContent(values, ['og:url'], 2_048), baseUrl);
+  const type = metaContent(values, ['og:type'], 80);
+
+  if (title) openGraph.title = title;
+  if (description) openGraph.description = description;
+  if (image) openGraph.image = image;
+  if (imageAlt) openGraph.imageAlt = imageAlt;
+  if (siteName) openGraph.siteName = siteName;
+  if (url) openGraph.url = url;
+  if (type) openGraph.type = type;
+
+  return Object.keys(openGraph).length > 0 ? openGraph : null;
 }
 
 function isPrivateIpv4(hostname: string) {
@@ -177,9 +236,10 @@ export async function analyzeActionHref(input: string): Promise<ActionMetadata> 
   }
 
   const html = await readLimitedHtml(response);
+  const metadata = metaValues(html);
   const suggestedTitle = firstTag(html, 'h1')
     || firstTag(html, 'h2')
-    || metaContent(html, ['og:title', 'twitter:title'])
+    || metaContent(metadata, ['og:title', 'twitter:title'])
     || firstTag(html, 'title');
 
   if (!suggestedTitle) throw new Error('We could not find a page heading. You can try another link.');
@@ -187,7 +247,8 @@ export async function analyzeActionHref(input: string): Promise<ActionMetadata> 
   return {
     href: url.toString(),
     suggestedTitle,
-    suggestedDetail: metaContent(html, ['description', 'og:description', 'twitter:description']),
+    suggestedDetail: metaContent(metadata, ['description', 'og:description', 'twitter:description']),
     effort: inferEffort(html),
+    openGraph: extractActionOpenGraph(html, url),
   };
 }

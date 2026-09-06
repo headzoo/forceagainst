@@ -54,6 +54,7 @@ export async function POST(request: Request) {
       description,
       effort: metadata.effort,
       href: metadata.href,
+      openGraph: metadata.openGraph,
       approved: false,
       published: false,
     }).returning({ id: actions.id, slug: actions.slug, title: actions.title });
