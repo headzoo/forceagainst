@@ -3,17 +3,20 @@ import { and, asc, desc, eq, exists, getTableColumns, gte, isNull, lte, or, sql 
 import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from '@/db/schema';
 import {
+  actionComments,
   actionLikes,
   actions,
   congressMembers,
   issues,
   orgs,
+  user,
   type ActionRecord,
   type CongressDistrictOffice,
   type CongressMember,
   type CongressMemberSocialHandles,
   type Issue,
 } from '@/db/schema';
+import type { ActionCommentView } from '@/lib/action-comments';
 
 export type {
   ActionRecord,
@@ -292,6 +295,48 @@ export async function getPublishedActionBySlugs(issueSlug: string, actionSlug: s
     .limit(1);
 
   return action;
+}
+
+export async function getActionComments(actionId: number): Promise<ActionCommentView[]> {
+  const rows = await db
+    .select({
+      id: actionComments.id,
+      actionId: actionComments.actionId,
+      parentId: actionComments.parentId,
+      depth: actionComments.depth,
+      body: actionComments.body,
+      deletedAt: actionComments.deletedAt,
+      createdAt: actionComments.createdAt,
+      authorId: user.id,
+      authorName: user.name,
+      authorUsername: user.username,
+      authorImage: user.image,
+    })
+    .from(actionComments)
+    .leftJoin(user, eq(actionComments.userId, user.id))
+    .where(eq(actionComments.actionId, actionId))
+    .orderBy(asc(actionComments.createdAt), asc(actionComments.id));
+
+  return rows.map((row) => {
+    const deleted = row.deletedAt !== null;
+    return {
+      id: row.id,
+      actionId: row.actionId,
+      parentId: row.parentId,
+      depth: row.depth,
+      body: deleted ? null : row.body,
+      deleted,
+      createdAt: row.createdAt.toISOString(),
+      author: deleted || !row.authorId || !row.authorName || !row.authorUsername
+        ? null
+        : {
+          id: row.authorId,
+          name: row.authorName,
+          username: row.authorUsername,
+          image: row.authorImage,
+        },
+    };
+  });
 }
 
 export async function getPublishedIssue(slug: string): Promise<PublishedIssue | undefined> {

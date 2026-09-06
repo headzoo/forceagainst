@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { ActionComments } from '@/app/action-comments';
 import { ActionLikeButton } from '@/app/action-like-button';
 import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
-import { getPublishedActionBySlugs } from '@/lib/db';
+import { getActionComments, getPublishedActionBySlugs } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -68,6 +69,7 @@ export async function generateMetadata({ params }: ActionPageProps): Promise<Met
 export default async function ActionPage({ params }: ActionPageProps) {
   const action = await findAction(params);
   if (!action) notFound();
+  const comments = await getActionComments(action.id);
   const createdDate = formatCreatedDate(action.createdAt);
   const { titleStart, titleEnd } = splitTitleEnding(action.title);
 
@@ -123,6 +125,8 @@ export default async function ActionPage({ params }: ActionPageProps) {
           <a className="primary-button action-description-button" href={action.href} target="_blank" rel="noreferrer">TAKE ACTION <span aria-hidden="true">↗</span></a>
         </article>
       </section>
+
+      <ActionComments actionId={action.id} initialComments={comments} />
 
       <SiteFooter />
     </main>

@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { bigint, bigserial, boolean, customType, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import { bigint, bigserial, boolean, check, customType, foreignKey, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import { user } from './auth-schema';
 
 export * from './auth-schema';
@@ -117,6 +117,29 @@ export const actionLikes = pgTable('action_likes', {
   index('action_likes_action_idx').on(table.actionId),
 ]);
 
+export const actionComments = pgTable('action_comments', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  actionId: bigint('action_id', { mode: 'number' }).notNull().references(() => actions.id, { onDelete: 'cascade' }),
+  userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
+  parentId: bigint('parent_id', { mode: 'number' }),
+  depth: integer('depth').notNull().default(0),
+  body: text('body').notNull(),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  foreignKey({
+    name: 'action_comments_parent_id_action_comments_id_fk',
+    columns: [table.parentId],
+    foreignColumns: [table.id],
+  }).onDelete('cascade'),
+  check('action_comments_depth_check', sql`${table.depth} between 0 and 3`),
+  check('action_comments_body_length_check', sql`char_length(${table.body}) between 1 and 2000`),
+  index('action_comments_action_created_idx').on(table.actionId, table.createdAt),
+  index('action_comments_parent_idx').on(table.parentId),
+  index('action_comments_user_idx').on(table.userId),
+]);
+
 export const congressMembers = pgTable('congress_members', {
   bioguideId: text('bioguide_id').primaryKey(),
   firstName: text('first_name').notNull(),
@@ -168,5 +191,6 @@ export type Issue = typeof issues.$inferSelect;
 export type Organization = typeof orgs.$inferSelect;
 export type ActionRecord = typeof actions.$inferSelect;
 export type ActionLike = typeof actionLikes.$inferSelect;
+export type ActionComment = typeof actionComments.$inferSelect;
 export type CongressMember = typeof congressMembers.$inferSelect;
 export type CongressMemberInsert = typeof congressMembers.$inferInsert;

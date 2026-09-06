@@ -1,9 +1,10 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   pgTable,
   text,
   timestamp,
   boolean,
+  check,
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
@@ -11,6 +12,7 @@ import {
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
+  username: text("username").notNull(),
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
@@ -19,7 +21,10 @@ export const user = pgTable("user", {
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
-});
+}, (table) => [
+  uniqueIndex("user_username_unique").on(table.username),
+  check("user_username_format", sql`${table.username} ~ '^[a-z0-9_]{3,24}$'`),
+]);
 
 export const session = pgTable(
   "session",

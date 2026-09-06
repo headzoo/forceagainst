@@ -1,8 +1,9 @@
 'use client';
 
-import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { authClient } from '@/lib/auth-client';
+import { normalizeUsername, USERNAME_MAX_LENGTH, USERNAME_MIN_LENGTH, usernameError } from '@/lib/username';
 
 type AuthMode = 'sign-in' | 'sign-up';
 
@@ -14,13 +15,9 @@ export function AuthControl() {
   const [error, setError] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [ready, setReady] = useState(false);
+  const ready = useSyncExternalStore(() => () => undefined, () => true, () => false);
   const menuRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
-
-  useEffect(() => {
-    setReady(true);
-  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -77,9 +74,19 @@ export function AuthControl() {
     const email = String(form.get('email') ?? '').trim();
     const password = String(form.get('password') ?? '');
     const name = String(form.get('name') ?? '').trim();
+    const username = normalizeUsername(String(form.get('username') ?? ''));
+
+    if (mode === 'sign-up') {
+      const validationError = usernameError(username);
+      if (validationError) {
+        setSubmitting(false);
+        setError(validationError);
+        return;
+      }
+    }
 
     const result = mode === 'sign-up'
-      ? await authClient.signUp.email({ email, password, name })
+      ? await authClient.signUp.email({ email, password, name, username })
       : await authClient.signIn.email({ email, password, rememberMe: true });
 
     setSubmitting(false);
@@ -141,10 +148,17 @@ export function AuthControl() {
             </p>
             <form onSubmit={handleSubmit}>
               {mode === 'sign-up' && (
-                <label>
-                  Name
-                  <input name="name" type="text" autoComplete="name" required autoFocus />
-                </label>
+                <>
+                  <label>
+                    Name
+                    <input name="name" type="text" minLength={2} maxLength={100} autoComplete="name" required autoFocus />
+                  </label>
+                  <label>
+                    Username
+                    <input name="username" type="text" minLength={USERNAME_MIN_LENGTH} maxLength={USERNAME_MAX_LENGTH} pattern="[A-Za-z0-9_]+" autoComplete="username" aria-describedby="username-hint" required />
+                    <small id="username-hint" className="auth-field-hint">Lowercase letters, numbers, and underscores. This cannot be changed later.</small>
+                  </label>
+                </>
               )}
               <label>
                 Email
