@@ -102,9 +102,9 @@ export const s = {
   trustBand: 'grid grid-cols-[140px_1fr_.8fr] items-center gap-[50px] bg-signal px-[7vw] py-20 text-white max-[780px]:grid-cols-1 max-[780px]:gap-[30px] max-[780px]:px-5 max-[780px]:py-[65px] [&_h2]:m-0 [&_h2]:text-[clamp(46px,6vw,85px)] [&_h2]:leading-[.86] [&_h2]:tracking-[-.07em] [&_h2]:uppercase [&>p]:max-w-[490px] [&>p]:font-bold [&>p]:leading-[1.55]',
   trustMark: 'grid size-[120px] -rotate-8 place-items-center rounded-full border-4 border-paper max-[780px]:size-[82px] [&>span]:text-[65px] [&>span]:font-black max-[780px]:[&>span]:text-[44px]',
 
-  footer: 'grid min-h-[180px] grid-cols-3 items-center gap-[30px] border-t-2 border-ink bg-[#13203C] px-[5vw] py-[45px] text-white max-[780px]:grid-cols-1 max-[780px]:text-left [&>p]:text-center [&>p]:font-extrabold max-[780px]:[&>p]:text-left [&>div]:flex [&>div]:flex-wrap [&>div]:justify-end [&>div]:gap-x-[22px] [&>div]:gap-y-[14px] [&>div]:text-[11px] [&>div]:font-black [&>div]:uppercase max-[780px]:[&>div]:justify-start',
-  footerBrand: '[&_img]:block [&_img]:h-auto [&_img]:w-[min(100%,285px)]',
-  footerSticker: 'mx-auto mt-4 block h-auto w-[153px] max-w-full',
+  footer: 'grid min-h-[180px] grid-cols-3 items-center gap-[30px] border-t-2 border-ink bg-[#13203C] px-[5vw] py-[45px] text-white max-[780px]:grid-cols-1 max-[780px]:justify-items-center max-[780px]:text-center [&>p]:text-center [&>p]:font-extrabold max-[780px]:[&>p]:py-1 [&>div]:flex [&>div]:flex-wrap [&>div]:justify-end [&>div]:gap-x-[22px] [&>div]:gap-y-[14px] [&>div]:text-[11px] [&>div]:font-black [&>div]:uppercase max-[780px]:[&>div]:flex-col max-[780px]:[&>div]:items-center max-[780px]:[&>div]:justify-start',
+  footerBrand: 'max-[780px]:w-full max-[780px]:justify-center max-[780px]:justify-self-center [&_img]:block [&_img]:h-auto [&_img]:w-[min(100%,285px)]',
+  footerSticker: 'mx-auto mt-4 block h-auto w-[153px] max-w-full max-[780px]:mt-0',
 
   apiHero: 'grid min-h-[560px] grid-cols-[1.15fr_.85fr] border-b-2 border-ink max-[780px]:grid-cols-1',
   apiHeroHeading: `${diagonalInk} border-r-2 border-ink px-[6vw] pt-[68px] pb-[72px] max-[780px]:border-r-0 max-[780px]:border-b-2 max-[780px]:px-5 max-[780px]:pt-[45px] max-[780px]:pb-[58px]`,
