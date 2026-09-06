@@ -13,6 +13,7 @@ import { SiteHeader } from '@/app/site-header';
 import { getActionCommentBanScopes, getActionCommentModerationAccess } from '@/lib/comment-moderation';
 import { getActionComments, getPublishedActionBySlugs } from '@/lib/db';
 import { getMemberSession } from '@/lib/member';
+import { createSiteMetadata, summarizeForMetadata } from '@/lib/site-metadata';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,16 +55,24 @@ async function findAction(params: ActionPageProps['params']) {
 
 export async function generateMetadata({ params }: ActionPageProps): Promise<Metadata> {
   const action = await findAction(params);
-  if (!action) return { title: 'Action not found' };
+  if (!action) return createSiteMetadata({
+    title: 'Action not found | Force Against Something',
+    description: 'The requested action could not be found on Force Against Something.',
+    path: '/',
+  });
 
   const url = `/a/${action.issueSlug}/${action.slug}`;
-  return {
+  const description = summarizeForMetadata(
+    action.detail || action.description,
+    `Learn how to take action with ${action.organization}.`,
+  );
+  return createSiteMetadata({
     title: `${action.title} | Force Against Something`,
-    description: action.detail,
-    alternates: { canonical: url },
-    openGraph: { url, title: action.title, description: action.detail, images: [] },
-    twitter: { card: 'summary', title: action.title, description: action.detail, images: [] },
-  };
+    description,
+    path: url,
+    image: action.openGraph?.image,
+    imageAlt: action.openGraph?.imageAlt,
+  });
 }
 
 export default async function ActionPage({ params }: ActionPageProps) {

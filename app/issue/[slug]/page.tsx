@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm';
 import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
 import { getPublishedIssue } from '@/lib/db';
+import { createSiteMetadata, summarizeForMetadata } from '@/lib/site-metadata';
 import { IssueActionsList } from '../issue-actions-list';
 
 export const dynamic = 'force-dynamic';
@@ -21,17 +22,22 @@ async function findIssue(params: IssuePageProps['params']) {
 
 export async function generateMetadata({ params }: IssuePageProps): Promise<Metadata> {
   const issue = await findIssue(params);
-  if (!issue) return { title: 'Issue not found' };
+  if (!issue) return createSiteMetadata({
+    title: 'Issue not found | Force Against Something',
+    description: 'The requested issue could not be found on Force Against Something.',
+    path: '/issues',
+  });
 
-  const description = issue.detail || `Find ways to take action on ${issue.name}.`;
+  const description = summarizeForMetadata(
+    issue.detail || issue.description,
+    `Learn about ${issue.name} and find verified ways to take action.`,
+  );
   const url = `/i/${issue.slug}`;
-  return {
+  return createSiteMetadata({
     title: `${issue.name} | Force Against Something`,
     description,
-    alternates: { canonical: url },
-    openGraph: { url, title: issue.name, description, images: [] },
-    twitter: { card: 'summary', title: issue.name, description, images: [] },
-  };
+    path: url,
+  });
 }
 
 export default async function IssuePage({ params }: IssuePageProps) {

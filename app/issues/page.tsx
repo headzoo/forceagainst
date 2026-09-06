@@ -4,26 +4,15 @@ import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
 import { s } from '@/app/tailwind-styles';
 import { getIssueDirectory } from '@/lib/db';
+import { createSiteMetadata } from '@/lib/site-metadata';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createSiteMetadata({
   title: 'Issues | Force Against Something',
   description: 'Browse the issues covered by Force Against Something and find ways to take action.',
-  alternates: { canonical: '/issues' },
-  openGraph: {
-    url: '/issues',
-    title: 'Issues | Force Against Something',
-    description: 'Browse the issues covered by Force Against Something and find ways to take action.',
-    images: [],
-  },
-  twitter: {
-    card: 'summary',
-    title: 'Issues | Force Against Something',
-    description: 'Browse the issues covered by Force Against Something and find ways to take action.',
-    images: [],
-  },
-};
+  path: '/issues',
+});
 
 export default async function IssuesPage() {
   const issues = await getIssueDirectory();

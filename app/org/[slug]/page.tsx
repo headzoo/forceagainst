@@ -8,6 +8,7 @@ import { OpenGraphPreview } from '@/app/open-graph-preview';
 import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
 import { getPublishedOrganizationBySlug } from '@/lib/db';
+import { createSiteMetadata, summarizeForMetadata } from '@/lib/site-metadata';
 import { OrganizationActionsList } from '../organization-actions-list';
 
 export const dynamic = 'force-dynamic';
@@ -21,17 +22,22 @@ async function findOrganization(params: OrganizationPageProps['params']) {
 
 export async function generateMetadata({ params }: OrganizationPageProps): Promise<Metadata> {
   const organization = await findOrganization(params);
-  if (!organization) return { title: 'Organization not found' };
+  if (!organization) return createSiteMetadata({
+    title: 'Organization not found | Force Against Something',
+    description: 'The requested organization could not be found on Force Against Something.',
+    path: '/orgs',
+  });
 
-  const description = `View actions from ${organization.name} on Force Against Something.`;
+  const description = summarizeForMetadata(
+    organization.description,
+    `Learn about ${organization.name} and view its actions on Force Against Something.`,
+  );
   const url = `/o/${organization.slug}`;
-  return {
+  return createSiteMetadata({
     title: `${organization.name} | Force Against Something`,
     description,
-    alternates: { canonical: url },
-    openGraph: { url, title: organization.name, description, images: [] },
-    twitter: { card: 'summary', title: organization.name, description, images: [] },
-  };
+    path: url,
+  });
 }
 
 export default async function OrganizationPage({ params }: OrganizationPageProps) {

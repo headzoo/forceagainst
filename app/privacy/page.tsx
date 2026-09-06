@@ -3,24 +3,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
+import { createSiteMetadata } from '@/lib/site-metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createSiteMetadata({
   title: 'Privacy Policy | Force Against Something',
   description: 'Read how Force Against Something collects, uses, and protects information.',
-  alternates: { canonical: '/privacy' },
-  openGraph: {
-    url: '/privacy',
-    title: 'Privacy Policy | Force Against Something',
-    description: 'How Force Against Something collects, uses, and protects information.',
-    images: [],
-  },
-  twitter: {
-    card: 'summary',
-    title: 'Privacy Policy | Force Against Something',
-    description: 'How Force Against Something collects, uses, and protects information.',
-    images: [],
-  },
-};
+  path: '/privacy',
+});
 
 export default function PrivacyPage() {
   return (

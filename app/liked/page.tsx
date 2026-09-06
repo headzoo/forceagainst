@@ -5,14 +5,16 @@ import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
 import { getLikedActions } from '@/lib/db';
 import { getMemberSession } from '@/lib/member';
+import { createSiteMetadata } from '@/lib/site-metadata';
 import { LikedActionsList } from './liked-actions-list';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createSiteMetadata({
   title: 'Liked actions | Force Against Something',
   description: 'The actions you liked on Force Against Something.',
-};
+  path: '/liked',
+});
 
 export default async function LikedPage() {
   const session = await getMemberSession();

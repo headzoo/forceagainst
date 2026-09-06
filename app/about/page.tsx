@@ -3,24 +3,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
+import { createSiteMetadata } from '@/lib/site-metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createSiteMetadata({
   title: 'About | Force Against Something',
   description: 'Learn about the mission and editorial approach behind Force Against Something.',
-  alternates: { canonical: '/about' },
-  openGraph: {
-    url: '/about',
-    title: 'About | Force Against Something',
-    description: 'The mission and editorial approach behind Force Against Something.',
-    images: [],
-  },
-  twitter: {
-    card: 'summary',
-    title: 'About | Force Against Something',
-    description: 'The mission and editorial approach behind Force Against Something.',
-    images: [],
-  },
-};
+  path: '/about',
+});
 
 export default function AboutPage() {
   return (

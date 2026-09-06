@@ -3,24 +3,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
+import { createSiteMetadata } from '@/lib/site-metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createSiteMetadata({
   title: 'Terms of Use | Force Against Something',
   description: 'Read the terms that govern use of Force Against Something.',
-  alternates: { canonical: '/terms' },
-  openGraph: {
-    url: '/terms',
-    title: 'Terms of Use | Force Against Something',
-    description: 'The terms that govern use of Force Against Something.',
-    images: [],
-  },
-  twitter: {
-    card: 'summary',
-    title: 'Terms of Use | Force Against Something',
-    description: 'The terms that govern use of Force Against Something.',
-    images: [],
-  },
-};
+  path: '/terms',
+});
 
 export default function TermsPage() {
   return (

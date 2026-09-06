@@ -4,14 +4,18 @@ import '@fortawesome/fontawesome-svg-core/styles.css';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { s } from '@/app/tailwind-styles';
+import { createSiteMetadata, SITE_URL } from '@/lib/site-metadata';
 import './globals.css';
 
 config.autoAddCss = false;
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://forceagainstsomething.com'),
-  title: 'Force Against Something — Find your way to act',
-  description: 'A curated directory of verified petitions, lawsuits, and campaigns fighting for the issue you choose.',
+  metadataBase: new URL(SITE_URL),
+  ...createSiteMetadata({
+    title: 'Force Against Something — Find your way to act',
+    description: 'A curated directory of verified petitions, lawsuits, and campaigns organized by issue so you can find your way to act.',
+    path: '/',
+  }),
   icons: {
     icon: [
       { url: '/favicon-star.ico', sizes: '48x48' },
@@ -22,20 +26,6 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: '/apple-touch-icon-star.png', sizes: '180x180', type: 'image/png' }],
     shortcut: ['/favicon-star.ico'],
-  },
-  openGraph: {
-    type: 'website',
-    url: '/',
-    siteName: 'Force Against Something',
-    title: 'Force Against Something — Find your way to act',
-    description: 'One issue. Every verified way to act.',
-    images: [{ url: '/og.png', width: 1200, height: 628, alt: 'Force Against Something' }],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Force Against Something — Find your way to act',
-    description: 'One issue. Every verified way to act.',
-    images: ['/og.png'],
   },
 };
 

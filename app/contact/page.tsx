@@ -3,24 +3,14 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
+import { createSiteMetadata } from '@/lib/site-metadata';
 import { ContactForm } from './contact-form';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createSiteMetadata({
   title: 'Contact | Force Against Something',
   description: 'Contact Force Against Something with questions, corrections, and partnership notes.',
-  openGraph: {
-    url: '/contact',
-    title: 'Contact | Force Against Something',
-    description: 'Send Force Against Something a message.',
-    images: [],
-  },
-  twitter: {
-    card: 'summary',
-    title: 'Contact | Force Against Something',
-    description: 'Send Force Against Something a message.',
-    images: [],
-  },
-};
+  path: '/contact',
+});
 
 type ContactPageProps = {
   searchParams?: Promise<{ sent?: string; error?: string }>;

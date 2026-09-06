@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
 import { getCurrentCongressMembers, type PublicCongressMember } from '@/lib/db';
+import { createSiteMetadata } from '@/lib/site-metadata';
 import { stateHeading } from '@/lib/us-states';
 import { CongressMemberCard } from './congress-member-card';
 import { FindRepresentatives } from './find-representatives';
@@ -11,22 +12,11 @@ import { GovernmentRosterNav } from './government-roster-nav';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createSiteMetadata({
   title: 'Your Government | Force Against Something',
   description: 'Find your U.S. representatives and browse the current Senate and House roster.',
-  openGraph: {
-    url: '/government',
-    title: 'Your Government | Force Against Something',
-    description: 'Look up your congressional district and browse current U.S. senators and representatives.',
-    images: [],
-  },
-  twitter: {
-    card: 'summary',
-    title: 'Your Government | Force Against Something',
-    description: 'Look up your congressional district and browse current U.S. senators and representatives.',
-    images: [],
-  },
-};
+  path: '/government',
+});
 
 function groupByState(members: PublicCongressMember[]) {
   const groups = new Map<string, PublicCongressMember[]>();

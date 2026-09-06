@@ -5,26 +5,15 @@ import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
 import { s } from '@/app/tailwind-styles';
 import { getOrganizationDirectory } from '@/lib/db';
+import { createSiteMetadata } from '@/lib/site-metadata';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createSiteMetadata({
   title: 'Organizations | Force Against Something',
   description: 'Browse the organizations behind actions listed on Force Against Something.',
-  alternates: { canonical: '/orgs' },
-  openGraph: {
-    url: '/orgs',
-    title: 'Organizations | Force Against Something',
-    description: 'Browse the organizations behind actions listed on Force Against Something.',
-    images: [],
-  },
-  twitter: {
-    card: 'summary',
-    title: 'Organizations | Force Against Something',
-    description: 'Browse the organizations behind actions listed on Force Against Something.',
-    images: [],
-  },
-};
+  path: '/orgs',
+});
 
 function websiteLabel(website: string) {
   try {

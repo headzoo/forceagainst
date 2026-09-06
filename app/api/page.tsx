@@ -3,24 +3,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
+import { createSiteMetadata } from '@/lib/site-metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createSiteMetadata({
   title: 'API | Force Against Something',
   description: 'Use the Force Against Something JSON API and read-only MCP server.',
-  alternates: { canonical: '/api' },
-  openGraph: {
-    url: '/api',
-    title: 'API | Force Against Something',
-    description: 'Use the public JSON API and read-only MCP server.',
-    images: [],
-  },
-  twitter: {
-    card: 'summary',
-    title: 'API | Force Against Something',
-    description: 'Use the public JSON API and read-only MCP server.',
-    images: [],
-  },
-};
+  path: '/api',
+});
 
 const jsonEndpoints = [
   {

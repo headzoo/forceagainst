@@ -6,13 +6,15 @@ import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
 import { getUserComments } from '@/lib/db';
 import { getMemberSession } from '@/lib/member';
+import { createSiteMetadata } from '@/lib/site-metadata';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createSiteMetadata({
   title: 'Your comments | Force Against Something',
   description: 'The comments you have written on Force Against Something.',
-};
+  path: '/comments',
+});
 
 type CommentsPageProps = {
   searchParams: Promise<{ page?: string | string[] }>;
