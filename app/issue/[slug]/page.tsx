@@ -60,7 +60,7 @@ export default async function IssuePage({ params }: IssuePageProps) {
           <nav className={s.breadcrumb} aria-label="Breadcrumb">
             <ol>
               <li><Link href="/">All actions</Link></li>
-              <li><Link href="/#top">Issues</Link></li>
+              <li><Link href="/issues">Issues</Link></li>
               <li aria-current="page"><span>{issue.name}</span></li>
             </ol>
           </nav>

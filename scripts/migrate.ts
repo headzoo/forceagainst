@@ -24,8 +24,8 @@ const issueSeeds: Array<typeof issues.$inferInsert> = [
   {
     slug: 'racial-justice',
     name: 'Racial justice',
-    detail: 'Fight discrimination and unequal treatment in voting, housing, policing, schools, healthcare, workplaces, and public life.',
-    description: '## Why this matters\n\nRacial justice work protects the civil and human rights of Black, Latino, Asian American, Pacific Islander, Middle Eastern, and other communities of color facing discrimination and unequal treatment.\n\nThis issue includes action on equal protection, voting access, fair housing, school equity, healthcare access, language access, anti-hate protections, and accountability when public or private systems reinforce racial harm.\n\n## What you can do\n\nSupport organizations led by affected communities, back litigation and policy campaigns that enforce civil-rights protections, and take direct action against discrimination where it shows up.',
+    detail: 'Issues related to race and ethnicity, including discrimination, civil rights, equal protection, public policy, representation, and institutional practices.',
+    description: 'This issue covers topics related to race and ethnicity, including discrimination, civil rights, equal protection, voting, housing, policing, education, healthcare, employment, representation, and government or institutional policy.\n\nListings may reflect different viewpoints and may support, oppose, or propose changes to related laws, policies, or practices.',
     status: 'active',
     sortOrder: 5,
   },

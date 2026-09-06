@@ -14,6 +14,7 @@
     "organizations:backfill-open-graph": "tsx --env-file=.env.local scripts/backfill-organization-open-graph.ts",
     "organizations:backfill-sidebars": "tsx --env-file=.env.local scripts/backfill-organization-sidebars.ts",
     "issues:backfill-sidebars": "tsx --env-file=.env.local scripts/backfill-issue-sidebars.ts",
+    "issues:neutralize-copy": "tsx --env-file=.env.local scripts/neutralize-issue-copy.ts",
     "government:sync": "tsx --env-file=.env.local scripts/sync-congress.ts",
     "db:generate": "node --env-file=.env.local node_modules/drizzle-kit/bin.cjs generate",
     "db:migrate": "tsx --env-file=.env.local scripts/migrate.ts",

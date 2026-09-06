@@ -24,7 +24,16 @@ export function SiteFooter({ homeBrandTarget = '/' }: SiteFooterProps) {
           {brand}
         </Link>
       )}
-      <p>Pick an issue. Do your part.</p>
+      <p>
+        <Image
+          className={s.footerSticker}
+          src="/i_love_vibe_coding.png"
+          alt="I love vibe coding"
+          width={153}
+          height={60}
+          unoptimized
+        />
+      </p>
       <div>
         <Link href="/contact">Contact</Link>
         <Link href="/government">Your Government</Link>

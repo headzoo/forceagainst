@@ -309,6 +309,18 @@ export async function getActiveIssues() {
     .orderBy(asc(issues.sortOrder), asc(issues.name));
 }
 
+export async function getIssueDirectory() {
+  return db
+    .select({
+      id: issues.id,
+      slug: issues.slug,
+      name: issues.name,
+      detail: issues.detail,
+    })
+    .from(issues)
+    .orderBy(asc(issues.sortOrder), asc(issues.name));
+}
+
 export async function getPublishedAction(id: number) {
   const [action] = await db
     .select({

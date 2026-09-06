@@ -104,6 +104,7 @@ export const s = {
 
   footer: 'grid min-h-[180px] grid-cols-3 items-center gap-[30px] border-t-2 border-ink bg-[#13203C] px-[5vw] py-[45px] text-white max-[780px]:grid-cols-1 max-[780px]:text-left [&>p]:text-center [&>p]:font-extrabold max-[780px]:[&>p]:text-left [&>div]:flex [&>div]:flex-wrap [&>div]:justify-end [&>div]:gap-x-[22px] [&>div]:gap-y-[14px] [&>div]:text-[11px] [&>div]:font-black [&>div]:uppercase max-[780px]:[&>div]:justify-start',
   footerBrand: '[&_img]:block [&_img]:h-auto [&_img]:w-[min(100%,285px)]',
+  footerSticker: 'mx-auto mt-4 block h-auto w-[153px] max-w-full',
 
   apiHero: 'grid min-h-[560px] grid-cols-[1.15fr_.85fr] border-b-2 border-ink max-[780px]:grid-cols-1',
   apiHeroHeading: `${diagonalInk} border-r-2 border-ink px-[6vw] pt-[68px] pb-[72px] max-[780px]:border-r-0 max-[780px]:border-b-2 max-[780px]:px-5 max-[780px]:pt-[45px] max-[780px]:pb-[58px]`,
