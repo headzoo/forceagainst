@@ -5,8 +5,12 @@ import { type FormEvent, useEffect, useId, useRef, useState, useSyncExternalStor
 import Link from 'next/link';
 import { authClient } from '@/lib/auth-client';
 import { normalizeUsername, USERNAME_MAX_LENGTH, USERNAME_MIN_LENGTH, usernameError } from '@/lib/username';
+import { TurnstileWidget } from '@/app/turnstile-widget';
 
 type AuthMode = 'sign-in' | 'sign-up';
+const developmentTurnstileSiteKey = '1x00000000000000000000AA';
+const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+  ?? (process.env.NODE_ENV === 'development' ? developmentTurnstileSiteKey : '');
 
 export function AuthControl() {
   const { data: session, isPending: sessionPending } = authClient.useSession();
@@ -16,6 +20,8 @@ export function AuthControl() {
   const [error, setError] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaAttempt, setCaptchaAttempt] = useState(0);
   const ready = useSyncExternalStore(() => () => undefined, () => true, () => false);
   const menuRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -63,6 +69,8 @@ export function AuthControl() {
   function showAuth(nextMode: AuthMode) {
     setMode(nextMode);
     setError('');
+    setCaptchaToken(null);
+    setCaptchaAttempt((current) => current + 1);
     setOpen(true);
   }
 
@@ -84,13 +92,28 @@ export function AuthControl() {
         setError(validationError);
         return;
       }
+      if (!captchaToken) {
+        setSubmitting(false);
+        setError('Complete the human verification before creating your account.');
+        return;
+      }
     }
 
     const result = mode === 'sign-up'
-      ? await authClient.signUp.email({ email, password, name, username })
+      ? await authClient.signUp.email({
+        email,
+        password,
+        name,
+        username,
+        fetchOptions: { headers: { 'x-captcha-response': captchaToken! } },
+      })
       : await authClient.signIn.email({ email, password, rememberMe: true });
 
     setSubmitting(false);
+    if (mode === 'sign-up') {
+      setCaptchaToken(null);
+      setCaptchaAttempt((current) => current + 1);
+    }
 
     if (result.error) {
       setError(result.error.message ?? 'We could not complete that request. Please try again.');
@@ -168,15 +191,16 @@ export function AuthControl() {
                 Password
                 <input name="password" type="password" autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'} minLength={8} required />
               </label>
+              {mode === 'sign-up' && <TurnstileWidget key={captchaAttempt} siteKey={turnstileSiteKey} onTokenChange={setCaptchaToken} />}
               {error && <p className={s.authError} role="alert">{error}</p>}
-              <button className={s.authSubmit} type="submit" disabled={submitting}>
+              <button className={s.authSubmit} type="submit" disabled={submitting || (mode === 'sign-up' && !captchaToken)}>
                 {submitting ? 'WORKING…' : mode === 'sign-up' ? 'CREATE ACCOUNT' : 'SIGN IN'}
                 <span aria-hidden="true">→</span>
               </button>
             </form>
             <p className={s.authSwitch}>
               {mode === 'sign-up' ? 'Already have an account?' : 'New here?'}{' '}
-              <button type="button" onClick={() => { setMode(mode === 'sign-up' ? 'sign-in' : 'sign-up'); setError(''); }}>
+              <button type="button" onClick={() => { setMode(mode === 'sign-up' ? 'sign-in' : 'sign-up'); setError(''); setCaptchaToken(null); setCaptchaAttempt((current) => current + 1); }}>
                 {mode === 'sign-up' ? 'Sign in' : 'Create one'}
               </button>
             </p>

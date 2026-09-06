@@ -2,7 +2,7 @@
 
 import { cn, s } from '@/app/tailwind-styles';
 import Image from 'next/image';
-import { type FormEvent, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { AuthControl } from '@/app/auth-control';
 import {
   MAX_COMMENT_DEPTH,
@@ -40,28 +40,36 @@ function CommentAvatar({ name, image }: { name: string; image: string | null }) 
   );
 }
 
-function CommentComposer({ parentId, autoFocus = false, onCancel, onCreate }: {
+function CommentComposer({ parentId, autoFocus = false, submissionBlockedReason = null, onCancel, onCreate }: {
   parentId: number | null;
   autoFocus?: boolean;
+  submissionBlockedReason?: string | null;
   onCancel?: () => void;
   onCreate: (body: string, parentId: number | null) => Promise<void>;
 }) {
   const [body, setBody] = useState('');
   const [working, setWorking] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<null | { message: string; blockedBy: string | null }>(null);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!body.trim()) return;
+    if (submissionBlockedReason) {
+      setError({ message: submissionBlockedReason, blockedBy: submissionBlockedReason });
+      return;
+    }
     setWorking(true);
-    setError('');
+    setError(null);
 
     try {
       await onCreate(body, parentId);
       setBody('');
       onCancel?.();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'We could not post your comment.');
+      setError({
+        message: reason instanceof Error ? reason.message : 'We could not post your comment.',
+        blockedBy: null,
+      });
     } finally {
       setWorking(false);
     }
@@ -87,20 +95,73 @@ function CommentComposer({ parentId, autoFocus = false, onCancel, onCreate }: {
           <button className={s.commentSubmit} type="submit" disabled={working || !body.trim()}>{working ? 'POSTING…' : parentId === null ? 'POST COMMENT' : 'POST REPLY'}</button>
         </span>
       </div>
-      {error && <p className={s.commentError} role="alert">{error}</p>}
+      {error && (error.blockedBy === null || error.blockedBy === submissionBlockedReason) && (
+        <p className={s.commentError} role="alert">{error.message}</p>
+      )}
     </form>
   );
 }
 
-function CommentItem({ node, viewerId, deletingId, onCreate, onDelete }: {
+function VerifyEmailNotice({ email }: { email: string }) {
+  const [sending, setSending] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+
+  async function resend() {
+    setSending(true);
+    setMessage('');
+    setError('');
+
+    try {
+      const result = await authClient.sendVerificationEmail({
+        email,
+        callbackURL: `${window.location.pathname}${window.location.search}`,
+      });
+
+      if (result.error) {
+        setError(result.error.message ?? 'We could not send another verification email.');
+        return;
+      }
+      setMessage('Verification email sent.');
+    } catch {
+      setError('We could not send another verification email.');
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className={s.commentsSignIn}>
+      <strong>Verify your email.</strong>
+      <p>We sent a verification link to {email}. Verify it before posting or replying.</p>
+      <button className={s.commentsVerifyButton} type="button" disabled={sending} onClick={() => void resend()}>
+        {sending ? 'SENDING…' : 'RESEND VERIFICATION EMAIL'}
+      </button>
+      {message && <p className={s.commentsVerifySuccess} role="status">{message}</p>}
+      {error && <p className={s.commentError} role="alert">{error}</p>}
+    </div>
+  );
+}
+
+function CommentRestrictionNotice({ message }: { message: string }) {
+  return (
+    <div className={s.commentsSignIn}>
+      <strong>Commenting unavailable.</strong>
+      <p>{message}</p>
+    </div>
+  );
+}
+
+function CommentItem({ node, viewerId, canComment, deletingId, onCreate, onDelete }: {
   node: ActionCommentNode;
   viewerId: string | null;
+  canComment: boolean;
   deletingId: number | null;
   onCreate: (body: string, parentId: number | null) => Promise<void>;
   onDelete: (comment: ActionCommentView) => Promise<void>;
 }) {
   const [replying, setReplying] = useState(false);
-  const canReply = Boolean(viewerId) && node.depth < MAX_COMMENT_DEPTH;
+  const canReply = canComment && node.depth < MAX_COMMENT_DEPTH;
   const canDelete = !node.deleted && node.author?.id === viewerId;
 
   return (
@@ -132,7 +193,7 @@ function CommentItem({ node, viewerId, deletingId, onCreate, onDelete }: {
       {replying && <CommentComposer parentId={node.id} autoFocus onCancel={() => setReplying(false)} onCreate={onCreate} />}
       {node.children.length > 0 && (
         <div className={s.commentChildren}>
-          {node.children.map((child) => <CommentItem key={child.id} node={child} viewerId={viewerId} deletingId={deletingId} onCreate={onCreate} onDelete={onDelete} />)}
+          {node.children.map((child) => <CommentItem key={child.id} node={child} viewerId={viewerId} canComment={canComment} deletingId={deletingId} onCreate={onCreate} onDelete={onDelete} />)}
         </div>
       )}
     </div>
@@ -143,8 +204,48 @@ export function ActionComments({ actionId, initialComments }: { actionId: number
   const { data: session, isPending } = authClient.useSession();
   const [comments, setComments] = useState(initialComments);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [commentAccess, setCommentAccess] = useState<null | {
+    userId: string;
+    allowed: boolean;
+    message: string | null;
+  }>(null);
   const threads = useMemo(() => nestActionComments(comments), [comments]);
   const visibleCount = comments.filter((comment) => !comment.deleted).length;
+  const userId = session?.user.id ?? null;
+  const emailVerified = Boolean(session?.user.emailVerified);
+  const currentAccess = commentAccess?.userId === userId ? commentAccess : null;
+  const accessLoading = Boolean(userId && emailVerified && !currentAccess);
+  const canComment = Boolean(userId && emailVerified && currentAccess?.allowed);
+  const submissionBlockedReason = isPending
+    ? 'Your account is still being checked. Try again in a moment.'
+    : accessLoading
+      ? 'Your commenting access is still being checked. Try again in a moment.'
+      : currentAccess && !currentAccess.allowed
+        ? currentAccess.message ?? 'Your account cannot post comments.'
+        : null;
+
+  useEffect(() => {
+    if (!userId || !emailVerified) return;
+
+    let active = true;
+    fetch('/api/account/comment-access', { cache: 'no-store' })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Could not check comment access.');
+        return await response.json() as { allowed: boolean; message: string | null };
+      })
+      .then((access) => { if (active) setCommentAccess({ userId, ...access }); })
+      .catch(() => {
+        if (active) {
+          setCommentAccess({
+            userId,
+            allowed: false,
+            message: 'We could not verify your commenting access. Refresh the page and try again.',
+          });
+        }
+      });
+
+    return () => { active = false; };
+  }, [emailVerified, userId]);
 
   async function createComment(body: string, parentId: number | null) {
     const response = await fetch(`/api/actions/${actionId}/comments`, {
@@ -186,8 +287,15 @@ export function ActionComments({ actionId, initialComments }: { actionId: number
         <p>{visibleCount === 0 ? 'Start the conversation.' : `${visibleCount} ${visibleCount === 1 ? 'comment' : 'comments'}`}</p>
       </div>
       <div className={s.actionCommentsPanel}>
-        {isPending && <p className={s.commentsStatus}>Checking your account…</p>}
-        {!isPending && session && <CommentComposer parentId={null} onCreate={createComment} />}
+        {(isPending || (session && emailVerified)) && (
+          <CommentComposer
+            parentId={null}
+            submissionBlockedReason={submissionBlockedReason}
+            onCreate={createComment}
+          />
+        )}
+        {!isPending && emailVerified && currentAccess && !currentAccess.allowed && <CommentRestrictionNotice message={currentAccess.message ?? 'Your account cannot post comments.'} />}
+        {!isPending && session && !session.user.emailVerified && <VerifyEmailNotice email={session.user.email} />}
         {!isPending && !session && (
           <div className={s.commentsSignIn}>
             <strong>Join the conversation.</strong>
@@ -196,7 +304,7 @@ export function ActionComments({ actionId, initialComments }: { actionId: number
           </div>
         )}
         <div className={s.commentThreadList}>
-          {threads.map((thread) => <CommentItem key={thread.id} node={thread} viewerId={session?.user.id ?? null} deletingId={deletingId} onCreate={createComment} onDelete={deleteComment} />)}
+          {threads.map((thread) => <CommentItem key={thread.id} node={thread} viewerId={session?.user.id ?? null} canComment={canComment} deletingId={deletingId} onCreate={createComment} onDelete={deleteComment} />)}
           {threads.length === 0 && <p className={s.commentsStatus}>No comments yet. Be the first to share something useful.</p>}
         </div>
       </div>

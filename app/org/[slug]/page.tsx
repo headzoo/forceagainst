@@ -6,6 +6,7 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
+import { ActionCardMeta } from '@/app/action-card-meta';
 import { getPublishedOrganizationBySlug } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
@@ -76,7 +77,7 @@ export default async function OrganizationPage({ params }: OrganizationPageProps
                   <span className={s.typePill}>{action.type}</span>{action.urgent && <span className={cn(s.typePill, s.typePillUrgent)}>Priority</span>} <Link href={`/i/${action.issueSlug}`}>{action.issue.toUpperCase()}</Link>
                 </span>
               </div>
-              <div className={s.cardAction}><Link href={`/a/${action.issueSlug}/${action.slug}`} aria-label={`Learn more and take action: ${action.title}`}>TAKE ACTION <b aria-hidden="true">→</b></Link><span>{action.effort}</span></div>
+              <div className={s.cardAction}><Link href={`/a/${action.issueSlug}/${action.slug}`} aria-label={`Learn more and take action: ${action.title}`}>TAKE ACTION <b aria-hidden="true">→</b></Link><ActionCardMeta commentCount={action.commentCount} effort={action.effort} /></div>
             </article>
           ))}
           {organization.actions.length === 0 && <p className={s.emptyState}>This organization has no published actions yet.</p>}

@@ -48,6 +48,7 @@ export default async function IssuePage({ params }: IssuePageProps) {
     organizationSlug: action.organizationSlug,
     issueSlug: action.issueSlug,
     effort: action.effort,
+    commentCount: action.commentCount,
   }));
 
   return (

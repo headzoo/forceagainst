@@ -106,6 +106,20 @@
       "when": 1788701206651,
       "tag": "0014_serious_slipstream",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1788704571214,
+      "tag": "0015_woozy_scarlet_spider",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1788705142242,
+      "tag": "0016_faulty_paibok",
+      "breakpoints": true
     }
   ]
 }

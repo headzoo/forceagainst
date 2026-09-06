@@ -8,6 +8,7 @@ import ctaImage from '@/assets/cta.jpg';
 import type { DirectoryAction, Issue } from '@/lib/db';
 import { authClient } from '@/lib/auth-client';
 import { LikeButton } from './action-like-button';
+import { ActionCardMeta } from './action-card-meta';
 import { SiteFooter } from './site-footer';
 import { SiteHeader } from './site-header';
 
@@ -210,7 +211,7 @@ export function ActionsDirectory({ issues, actions }: { issues: Issue[]; actions
                     <span className={s.typePill}>{action.type}</span>{action.urgent && <span className={cn(s.typePill, s.typePillUrgent)}>Priority</span>} <span className={s.organizationPrefix}>BY</span> <Link href={`/o/${action.organizationSlug}`}>{action.organization.toUpperCase()}</Link>
                   </span>
                 </div>
-                <div className={s.cardAction}><Link href={`/a/${action.issueSlug}/${action.slug}`} aria-label={`Learn more and take action: ${action.title}`}>TAKE ACTION</Link><span>{action.effort}</span></div>
+                <div className={s.cardAction}><Link href={`/a/${action.issueSlug}/${action.slug}`} aria-label={`Learn more and take action: ${action.title}`}>TAKE ACTION</Link><ActionCardMeta commentCount={action.commentCount} effort={action.effort} /></div>
               </article>
             ))}
             {visible.length === 0 && <p className={s.emptyState}>No published actions match this filter yet.</p>}

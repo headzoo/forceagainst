@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { LikeButton } from '@/app/action-like-button';
+import { ActionCardMeta } from '@/app/action-card-meta';
 import type { LikedAction } from '@/lib/db';
 
 export function LikedActionsList({ actions: initialActions }: { actions: LikedAction[] }) {
@@ -77,7 +78,7 @@ export function LikedActionsList({ actions: initialActions }: { actions: LikedAc
                 <span className={s.typePill}>{action.type}</span>{action.urgent && <span className={cn(s.typePill, s.typePillUrgent)}>Priority</span>} <span className={s.organizationPrefix}>BY</span> <Link href={`/o/${action.organizationSlug}`}>{action.organization.toUpperCase()}</Link> <span className={s.organizationSeparator}>·</span> <Link href={`/i/${action.issueSlug}`}>{action.issue.toUpperCase()}</Link>
               </span>
             </div>
-            <div className={s.cardAction}><Link href={`/a/${action.issueSlug}/${action.slug}`} aria-label={`Learn more and take action: ${action.title}`}>TAKE ACTION</Link><span>{action.effort}</span></div>
+            <div className={s.cardAction}><Link href={`/a/${action.issueSlug}/${action.slug}`} aria-label={`Learn more and take action: ${action.title}`}>TAKE ACTION</Link><ActionCardMeta commentCount={action.commentCount} effort={action.effort} /></div>
           </article>
         ))}
       </div>

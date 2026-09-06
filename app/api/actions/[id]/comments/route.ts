@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { actionComments, actions } from '@/db/schema';
 import { MAX_COMMENT_LENGTH } from '@/lib/action-comments';
+import { prepareCommentBody, voteOnComment } from '@/lib/comment-voters';
 import { db, getActionComments, publicActionVisibilityCondition } from '@/lib/db';
 import { getMemberSession } from '@/lib/member';
 
@@ -64,12 +65,33 @@ export async function POST(request: Request, { params }: RouteContext) {
     if (depth > 3) return Response.json({ error: 'Comments can only be nested four levels deep.' }, { status: 400 });
   }
 
+  const preparedBody = prepareCommentBody(input.body);
+  const vote = await voteOnComment({
+    actionId,
+    body: input.body,
+    ...preparedBody,
+    now: new Date(),
+    user: {
+      id: session.user.id,
+      emailVerified: session.user.emailVerified,
+      createdAt: new Date(session.user.createdAt),
+    },
+  });
+
+  if (vote.decision === 'reject') {
+    return Response.json({ error: vote.message, code: vote.code }, {
+      status: vote.status,
+      headers: vote.retryAfter ? { 'Retry-After': String(vote.retryAfter) } : undefined,
+    });
+  }
+
   const [created] = await db.insert(actionComments).values({
     actionId,
     userId: session.user.id,
     parentId: input.parentId,
     depth,
     body: input.body,
+    normalizedBodyHash: preparedBody.normalizedBodyHash,
   }).returning({ id: actionComments.id });
 
   const comment = (await getActionComments(actionId)).find((item) => item.id === created.id);

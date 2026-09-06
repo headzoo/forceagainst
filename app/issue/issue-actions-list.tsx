@@ -4,12 +4,13 @@ import { cn, s } from '@/app/tailwind-styles';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { LikeButton } from '@/app/action-like-button';
+import { ActionCardMeta } from '@/app/action-card-meta';
 import { authClient } from '@/lib/auth-client';
 import type { DirectoryAction } from '@/lib/db';
 
 type IssueActionCard = Pick<
   DirectoryAction,
-  'id' | 'slug' | 'title' | 'detail' | 'type' | 'urgent' | 'organization' | 'organizationSlug' | 'issueSlug' | 'effort'
+  'id' | 'slug' | 'title' | 'detail' | 'type' | 'urgent' | 'organization' | 'organizationSlug' | 'issueSlug' | 'effort' | 'commentCount'
 >;
 
 export function IssueActionsList({ actions }: { actions: IssueActionCard[] }) {
@@ -98,7 +99,7 @@ export function IssueActionsList({ actions }: { actions: IssueActionCard[] }) {
               <span className={s.typePill}>{action.type}</span>{action.urgent && <span className={cn(s.typePill, s.typePillUrgent)}>Priority</span>} <span className={s.organizationPrefix}>BY</span> <Link href={`/o/${action.organizationSlug}`}>{action.organization.toUpperCase()}</Link>
             </span>
           </div>
-          <div className={s.cardAction}><Link href={`/a/${action.issueSlug}/${action.slug}`} aria-label={`Learn more and take action: ${action.title}`}>TAKE ACTION</Link><span>{action.effort}</span></div>
+          <div className={s.cardAction}><Link href={`/a/${action.issueSlug}/${action.slug}`} aria-label={`Learn more and take action: ${action.title}`}>TAKE ACTION</Link><ActionCardMeta commentCount={action.commentCount} effort={action.effort} /></div>
         </article>
       ))}
       {actions.length === 0 && <p className={s.emptyState}>No published actions for this issue yet.</p>}

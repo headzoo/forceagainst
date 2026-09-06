@@ -13,6 +13,8 @@ const tsvector = customType<{ data: string }>({
 export const issueStatus = pgEnum('issue_status', ['active', 'planned']);
 export const actionType = pgEnum('action_type', ['Petition', 'Lawsuit', 'Campaign']);
 export const congressChamber = pgEnum('congress_chamber', ['house', 'senate']);
+export const commentAccessStatus = pgEnum('comment_access_status', ['active', 'muted', 'banned']);
+export const commentModerationActionType = pgEnum('comment_moderation_action_type', ['warning', 'mute', 'ban', 'restore', 'comment_removed']);
 
 export type CongressDistrictOffice = {
   id?: string;
@@ -79,6 +81,7 @@ export const actions = pgTable('actions', {
   detail: text('detail').notNull(),
   description: text('description').notNull().default(''),
   effort: text('effort').notNull(),
+  commentCount: integer('comment_count').notNull().default(0),
   href: text('href').notNull(),
   urgent: boolean('urgent').notNull().default(false),
   verified: boolean('verified').notNull().default(false),
@@ -106,6 +109,7 @@ export const actions = pgTable('actions', {
   index('actions_submitter_idx').on(table.submittedByUserId),
   uniqueIndex('actions_issue_slug_unique').on(table.issueId, table.slug),
   uniqueIndex('actions_issue_title_unique').on(table.issueId, table.title),
+  check('actions_comment_count_nonnegative_check', sql`${table.commentCount} >= 0`),
 ]);
 
 export const actionLikes = pgTable('action_likes', {
@@ -124,6 +128,7 @@ export const actionComments = pgTable('action_comments', {
   parentId: bigint('parent_id', { mode: 'number' }),
   depth: integer('depth').notNull().default(0),
   body: text('body').notNull(),
+  normalizedBodyHash: text('normalized_body_hash'),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -138,6 +143,47 @@ export const actionComments = pgTable('action_comments', {
   index('action_comments_action_created_idx').on(table.actionId, table.createdAt),
   index('action_comments_parent_idx').on(table.parentId),
   index('action_comments_user_idx').on(table.userId),
+  index('action_comments_user_body_hash_created_idx').on(table.userId, table.normalizedBodyHash, table.createdAt),
+]);
+
+export const userCommentModeration = pgTable('user_comment_moderation', {
+  userId: text('user_id').primaryKey().references(() => user.id, { onDelete: 'cascade' }),
+  status: commentAccessStatus('status').notNull().default('active'),
+  restrictionExpiresAt: timestamp('restriction_expires_at', { withTimezone: true }),
+  reason: text('reason'),
+  updatedByAdminId: text('updated_by_admin_id'),
+  updatedByAdminName: text('updated_by_admin_name'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check('user_comment_moderation_expiry_check', sql`
+    (${table.status} = 'muted' AND ${table.restrictionExpiresAt} IS NOT NULL)
+    OR (${table.status} IN ('active', 'banned') AND ${table.restrictionExpiresAt} IS NULL)
+  `),
+  index('user_comment_moderation_status_idx').on(table.status, table.restrictionExpiresAt),
+]);
+
+export const commentModerationActions = pgTable('comment_moderation_actions', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  action: commentModerationActionType('action').notNull(),
+  reason: text('reason').notNull(),
+  restrictionExpiresAt: timestamp('restriction_expires_at', { withTimezone: true }),
+  performedByAdminId: text('performed_by_admin_id').notNull(),
+  performedByAdminName: text('performed_by_admin_name').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check('comment_moderation_actions_reason_length_check', sql`char_length(${table.reason}) between 1 and 1000`),
+  index('comment_moderation_actions_user_created_idx').on(table.userId, table.createdAt),
+]);
+
+export const commentRateLimits = pgTable('comment_rate_limits', {
+  key: text('key').primaryKey(),
+  windowStartedAt: timestamp('window_started_at', { withTimezone: true }).notNull(),
+  requestCount: integer('request_count').notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+}, (table) => [
+  check('comment_rate_limits_request_count_check', sql`${table.requestCount} > 0`),
+  index('comment_rate_limits_expires_idx').on(table.expiresAt),
 ]);
 
 export const congressMembers = pgTable('congress_members', {
@@ -192,5 +238,7 @@ export type Organization = typeof orgs.$inferSelect;
 export type ActionRecord = typeof actions.$inferSelect;
 export type ActionLike = typeof actionLikes.$inferSelect;
 export type ActionComment = typeof actionComments.$inferSelect;
+export type UserCommentModeration = typeof userCommentModeration.$inferSelect;
+export type CommentModerationAction = typeof commentModerationActions.$inferSelect;
 export type CongressMember = typeof congressMembers.$inferSelect;
 export type CongressMemberInsert = typeof congressMembers.$inferInsert;
