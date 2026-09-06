@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = createSiteMetadata({
   title: 'Force Against Something — Find your way to act',
+  openGraphTitle: 'Force Against Something - Do Your Part.',
   description: 'A curated directory of verified petitions, lawsuits, and campaigns organized by issue so you can find your way to act.',
   path: '/',
 });

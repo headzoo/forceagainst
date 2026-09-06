@@ -143,7 +143,7 @@ export function ActionsDirectory({ issues, actions }: { issues: Issue[]; actions
 
       <section className={s.hero} id="top">
         <div className={s.heroCopy}>
-          <p className={s.eyebrow}><span /> PICK AN ISSUE. DO YOUR PART.</p>
+          <p className={s.eyebrow}><span /> DO YOUR PART.</p>
           <h1 className={s.heroCta}>
             <Image className={s.heroCtaImage} src={ctaImage} alt="Turn concern into force." priority sizes="(max-width: 780px) calc(100vw - 40px), 48vw" />
           </h1>

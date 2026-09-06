@@ -4,14 +4,15 @@ export const SITE_NAME = 'Force Against Something';
 export const SITE_URL = 'https://forceagainstsomething.com';
 
 const SITE_OPEN_GRAPH_IMAGE = {
-  url: '/header-wordmark-star.png',
-  width: 620,
-  height: 99,
+  url: '/og-logo.png',
+  width: 1200,
+  height: 630,
   alt: SITE_NAME,
 };
 
 type SiteMetadataOptions = {
   title: string;
+  openGraphTitle?: string;
   description: string;
   path: string;
   image?: string | null;
@@ -20,6 +21,7 @@ type SiteMetadataOptions = {
 
 export function createSiteMetadata({
   title,
+  openGraphTitle,
   description,
   path,
   image,
@@ -38,7 +40,7 @@ export function createSiteMetadata({
       type: 'website',
       url: path,
       siteName: SITE_NAME,
-      title,
+      title: openGraphTitle || title,
       description,
       images: openGraphImages,
     },
