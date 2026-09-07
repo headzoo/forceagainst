@@ -151,6 +151,7 @@ export default async function ActionPage({ params }: ActionPageProps) {
 
       <ActionComments actionId={action.id} initialComments={comments} commentsLocked={action.commentsLocked} slowModeSeconds={action.commentSlowModeSeconds} moderation={commentModeration} />
 
+      <section className={s.trustBand}><div className={s.trustMark} aria-hidden="true"><span>✓</span></div><div><p className={s.eyebrowLight}><span /> OUR STANDARD</p><h2>Curated for action,<br />not attention.</h2></div><p>We prioritize credible organizations, active efforts, transparent asks, and direct links. No outrage bait. No pay-to-play placement. Just useful ways to help.</p></section>
       <SiteFooter />
     </main>
   );

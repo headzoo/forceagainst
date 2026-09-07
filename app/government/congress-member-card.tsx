@@ -1,5 +1,6 @@
 import { s } from '@/app/tailwind-styles';
 import Image from 'next/image';
+import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faFacebook,
@@ -144,6 +145,16 @@ export function CongressMemberCard({ member }: CongressMemberCardProps) {
             ))}
           </div>
         )}
+
+        <Link
+          className={s.congressMemberWrite}
+          href={`/government/write?rep=${encodeURIComponent(member.bioguideId)}`}
+        >
+          <span>Write</span>
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M3 10h13M11 4l6 6-6 6" />
+          </svg>
+        </Link>
       </div>
     </article>
   );

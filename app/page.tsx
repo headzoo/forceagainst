@@ -10,6 +10,10 @@ export const metadata: Metadata = createSiteMetadata({
   openGraphTitle: 'Force Against Something - Do Your Part.',
   description: 'A curated directory of verified petitions, lawsuits, and campaigns organized by issue so you can find your way to act.',
   path: '/',
+  image: '/og-homepage.png',
+  imageAlt: 'Turn concern into force.',
+  imageWidth: 1200,
+  imageHeight: 630,
 });
 
 export default async function Home() {

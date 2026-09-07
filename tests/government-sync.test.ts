@@ -93,7 +93,7 @@ test('uses enrichment only for an authoritative member and preserves Congress fa
   const normalized = normalizeCongressMember(member('A000001'), {
     id: { bioguide: 'A000001' },
     name: { first: 'Ada', last: 'Byron', official_full: 'Ada Byron' },
-    terms: [{ type: 'rep', state: 'AK', district: 'At-Large', party: 'Example', contact: 'https://example.test/contact' }],
+    terms: [{ type: 'rep', state: 'AK', district: 'At-Large', party: 'Example', contact_form: 'https://example.test/contact' }],
   });
   assert.equal(normalized.officialFullName, 'Ada Byron');
   assert.equal(normalized.contactFormUrl, 'https://example.test/contact');

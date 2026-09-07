@@ -17,6 +17,8 @@ type SiteMetadataOptions = {
   path: string;
   image?: string | null;
   imageAlt?: string;
+  imageWidth?: number;
+  imageHeight?: number;
 };
 
 export function createSiteMetadata({
@@ -26,9 +28,11 @@ export function createSiteMetadata({
   path,
   image,
   imageAlt,
+  imageWidth,
+  imageHeight,
 }: SiteMetadataOptions): Metadata {
   const openGraphImages = image
-    ? [{ url: image, alt: imageAlt || title }]
+    ? [{ url: image, alt: imageAlt || title, width: imageWidth, height: imageHeight }]
     : [SITE_OPEN_GRAPH_IMAGE];
   const twitterImages = image ? [image] : [SITE_OPEN_GRAPH_IMAGE.url];
 

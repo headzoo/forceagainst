@@ -48,6 +48,7 @@ type LegislatorTerm = {
   state_rank?: number;
   party?: string;
   url?: string;
+  contact_form?: string;
   contact?: string;
   phone?: string;
   office?: string;
@@ -322,7 +323,7 @@ export function normalizeCongressMember(member: CongressMemberInput, enrichment?
     bioguideId: member.bioguideId, ...names, party: enrichmentTerm?.party ?? member.partyName ?? member.party ?? 'Unknown', chamber, state, district,
     senateClass: chamber === 'senate' && typeof enrichmentTerm?.class === 'number' ? enrichmentTerm.class : null,
     senateRank: chamber === 'senate' && typeof enrichmentTerm?.state_rank === 'number' ? enrichmentTerm.state_rank : null,
-    displayTitle: title, officialWebsite: enrichmentTerm?.url ?? null, contactFormUrl: enrichmentTerm?.contact ?? null, capitolPhone: enrichmentTerm?.phone ?? null,
+    displayTitle: title, officialWebsite: enrichmentTerm?.url ?? null, contactFormUrl: enrichmentTerm?.contact_form ?? enrichmentTerm?.contact ?? null, capitolPhone: enrichmentTerm?.phone ?? null,
     capitolOffice: enrichmentTerm?.office ?? null, mailingAddress: enrichmentTerm?.address ?? null, congressGovProfileUrl: member.url ?? null,
     officialImageUrl: member.depiction?.imageUrl ?? null, officialImageAttribution: stripHtmlToText(member.depiction?.attribution ?? null),
     officialSocialHandles: Object.keys(socialHandles).length ? socialHandles : null,

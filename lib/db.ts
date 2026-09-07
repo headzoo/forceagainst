@@ -189,6 +189,21 @@ export async function getCurrentCongressMembers(): Promise<PublicCongressMember[
     );
 }
 
+export async function getCurrentCongressMemberByBioguideId(
+  bioguideId: string,
+): Promise<PublicCongressMember | null> {
+  const [member] = await db
+    .select(congressMemberPublicColumns)
+    .from(congressMembers)
+    .where(and(
+      currentCongressMemberCondition(),
+      eq(congressMembers.bioguideId, bioguideId),
+    ))
+    .limit(1);
+
+  return member ?? null;
+}
+
 export async function getCongressMembersByJurisdiction(
   state: string,
   district: number,
