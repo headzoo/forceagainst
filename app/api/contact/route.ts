@@ -72,8 +72,8 @@ export async function POST(request: Request) {
   }
 
   const apiKey = process.env.RESEND_API_KEY;
-  const contactToEmail = process.env.CONTACT_TO_EMAIL ?? 'contact@forceagainstsomething.com';
-  const contactFromEmail = process.env.CONTACT_FROM_EMAIL ?? 'Force Against Something <contact@forceagainstsomething.com>';
+  const contactToEmail = process.env.CONTACT_TO_EMAIL ?? 'contact@forceagainst.com';
+  const contactFromEmail = process.env.CONTACT_FROM_EMAIL ?? 'Force Against <contact@forceagainst.com>';
 
   if (!apiKey) {
     console.error('RESEND_API_KEY is not configured.');
@@ -86,13 +86,13 @@ export async function POST(request: Request) {
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'User-Agent': 'force-against-something/1.0',
+        'User-Agent': 'force-against/1.0',
       },
       body: JSON.stringify({
         from: contactFromEmail,
         to: [contactToEmail],
         reply_to: email,
-        subject: `Force Against Something contact: ${toSingleLine(topic).slice(0, 80)}`,
+        subject: `Force Against contact: ${toSingleLine(topic).slice(0, 80)}`,
         text: buildMessageText({
           name: toSingleLine(name),
           email,

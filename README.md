@@ -1,6 +1,6 @@
-# Force Against Something
+# Force Against
 
-Force Against Something is a curated directory that helps people turn concern about an issue into concrete action. It brings verified petitions, lawsuits, and campaigns into one focused place, with context about the organization behind each effort and a direct path to participate.
+Force Against is a curated directory that helps people turn concern about an issue into concrete action. It brings verified petitions, lawsuits, and campaigns into one focused place, with context about the organization behind each effort and a direct path to participate.
 
 ## What it includes
 

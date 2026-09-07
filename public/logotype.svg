@@ -1,11 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="670" height="96" viewBox="0 0 670 96" role="img" aria-labelledby="title desc">
-  <title id="title">Force Against Something</title>
+<svg xmlns="http://www.w3.org/2000/svg" width="430" height="96" viewBox="0 0 430 96" role="img" aria-labelledby="title desc">
+  <title id="title">Force Against</title>
   <desc id="desc">Bold navy logotype with Against in fire red and an angular resistance mark.</desc>
   <rect x="4" y="12" width="72" height="72" rx="17" fill="#14213d" transform="rotate(-2 40 48)"/>
   <path d="m20 51 40-25c4-2 8 2 5 6l-10 14 9 8c3 3 1 7-3 7H47l-10 14c-2 3-7 1-7-3l2-16-10 3c-5 1-7-5-2-8Z" fill="#f1faee"/>
   <path d="m51 37 10-8-8 14Z" fill="#e63946"/>
   <text x="94" y="60" fill="#14213d" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="900" letter-spacing="-2">FORCE</text>
   <text x="238" y="60" fill="#e63946" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="900" letter-spacing="-2">AGAINST</text>
-  <text x="423" y="60" fill="#14213d" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="900" letter-spacing="-2">SOMETHING</text>
   <path d="M239 69h175" stroke="#e63946" stroke-width="5"/>
 </svg>

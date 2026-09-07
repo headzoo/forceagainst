@@ -11,8 +11,8 @@ type EditActionPageProps = { params: Promise<{ id: string }> };
 export async function generateMetadata({ params }: EditActionPageProps): Promise<Metadata> {
   const { id } = await params;
   return createSiteMetadata({
-    title: 'Edit action | Force Against Something',
-    description: 'Update an action submitted to the Force Against Something directory.',
+    title: 'Edit action | Force Against',
+    description: 'Update an action submitted to the Force Against directory.',
     path: `/organization/actions/${id}`,
   });
 }

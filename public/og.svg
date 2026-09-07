@@ -1,16 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="628" viewBox="0 0 1200 628" role="img" aria-labelledby="title desc">
-  <title id="title">Force Against Something</title>
+  <title id="title">Force Against</title>
   <desc id="desc">Social banner for the directory of petitions, lawsuits, and campaigns.</desc>
   <rect width="1200" height="628" fill="#f1faee"/>
   <path d="M0 0h34v628H0z" fill="#e63946"/>
   <path d="M1166 0h34v628h-34z" fill="#14213d"/>
-  <g transform="translate(195 221)">
+  <g transform="translate(332 221)">
     <rect x="4" y="4" width="92" height="92" rx="22" fill="#14213d" transform="rotate(-2 50 50)"/>
     <path d="m25 54 51-33c5-3 10 3 7 8L70 47l12 10c4 4 1 9-4 9H61L48 84c-3 4-9 1-9-4l3-21-13 4c-6 1-9-6-4-9Z" fill="#f1faee"/>
     <path d="m65 36 13-10-10 18Z" fill="#e63946"/>
     <text x="126" y="44" fill="#14213d" font-family="DejaVu Sans, sans-serif" font-size="52" font-weight="900">FORCE</text>
     <text x="306" y="44" fill="#e63946" font-family="DejaVu Sans, sans-serif" font-size="52" font-weight="900">AGAINST</text>
-    <text x="554" y="44" fill="#14213d" font-family="DejaVu Sans, sans-serif" font-size="52" font-weight="900">SOMETHING</text>
     <path d="M306 59h229" stroke="#e63946" stroke-width="7"/>
   </g>
   <text x="600" y="389" text-anchor="middle" fill="#14213d" font-family="DejaVu Sans, sans-serif" font-size="25" font-weight="700">One issue. Every verified way to act.</text>

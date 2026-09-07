@@ -255,7 +255,7 @@ export function AuthControl() {
                 ? 'Create your account with an email and password.'
                 : mode === 'recover-passkey'
                   ? 'Use one downloaded recovery code to replace every passkey on your account.'
-                  : 'Sign in to your Force Against Something account.'}
+                  : 'Sign in to your Force Against account.'}
             </p>
             <form onSubmit={handleSubmit}>
               {mode === 'recover-passkey' ? (
@@ -347,7 +347,7 @@ async function downloadPasskeyRecoveryCodes() {
   const url = URL.createObjectURL(await response.blob());
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'force-against-something-passkey-recovery-codes.txt';
+  link.download = 'force-against-passkey-recovery-codes.txt';
   document.body.appendChild(link);
   link.click();
   link.remove();

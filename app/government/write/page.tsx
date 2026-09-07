@@ -14,7 +14,7 @@ import { LetterBuilder } from './letter-builder';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = createSiteMetadata({
-  title: 'Write Your Representative | Force Against Something',
+  title: 'Write Your Representative | Force Against',
   description: 'Build, copy, and download a letter to your representative.',
   path: '/government/write',
 });

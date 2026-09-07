@@ -15,7 +15,7 @@ export function ContactForm({ sent, error }: ContactFormProps) {
     <form className={s.contactForm} action="/api/contact" method="post" onSubmit={() => setSubmitting(true)}>
       <p className={cn(s.step, s.contactStep)}>DIRECT MESSAGE / 01</p>
       <h2>Write the note.</h2>
-      <p className={s.formIntro}>Messages go to contact@forceagainstsomething.com. Use the same form for listing updates, reporting broken links, or general questions.</p>
+      <p className={s.formIntro}>Messages go to contact@forceagainst.com. Use the same form for listing updates, reporting broken links, or general questions.</p>
 
       {sent && <p className={s.formSuccess} role="status">Message sent. Thanks for reaching out.</p>}
       {error && <p className={s.formError} role="alert">{error}</p>}

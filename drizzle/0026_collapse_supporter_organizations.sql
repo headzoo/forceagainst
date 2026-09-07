@@ -57,7 +57,7 @@ BEGIN
 		VALUES (
 			'Supporters of Force',
 			'supporters-of-force',
-			'https://forceagainstsomething.com/'
+			'https://forceagainst.com/'
 		)
 		RETURNING "id" INTO target_organization_id;
 	ELSE
@@ -75,7 +75,7 @@ BEGIN
 			"name" = 'Supporters of Force',
 			"slug" = 'supporters-of-force',
 			"avatar" = NULL,
-			"website" = 'https://forceagainstsomething.com/',
+			"website" = 'https://forceagainst.com/',
 			"open_graph" = NULL,
 			"description" = '',
 			"sidebar" = '',

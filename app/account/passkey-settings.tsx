@@ -27,7 +27,7 @@ async function downloadRecoveryCodes() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'force-against-something-passkey-recovery-codes.txt';
+  link.download = 'force-against-passkey-recovery-codes.txt';
   document.body.appendChild(link);
   link.click();
   link.remove();

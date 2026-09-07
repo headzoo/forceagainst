@@ -11,8 +11,8 @@ import { createSiteMetadata } from '@/lib/site-metadata';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = createSiteMetadata({
-  title: 'Your comments | Force Against Something',
-  description: 'The comments you have written on Force Against Something.',
+  title: 'Your comments | Force Against',
+  description: 'The comments you have written on Force Against.',
   path: '/comments',
 });
 

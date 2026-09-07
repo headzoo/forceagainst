@@ -1,4 +1,4 @@
-const SIGNATURE_DATABASE_NAME = 'forceAgainstSomething:governmentWriter:v1';
+const SIGNATURE_DATABASE_NAME = 'forceAgainst:governmentWriter:v1';
 const SIGNATURE_STORE_NAME = 'signatures';
 const SIGNATURE_STORAGE_KEY = 'default';
 const MAX_SIGNATURE_DATA_URL_LENGTH = 1_500_000;

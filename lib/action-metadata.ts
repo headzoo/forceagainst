@@ -222,7 +222,7 @@ async function fetchPublicHtml(input: string) {
 
   for (let redirects = 0; redirects <= MAX_REDIRECTS; redirects += 1) {
     response = await fetch(url, {
-      headers: { 'User-Agent': 'ForceAgainstSomethingBot/1.0 (+https://forceagainstsomething.com)' },
+      headers: { 'User-Agent': 'ForceAgainstBot/1.0 (+https://forceagainst.com)' },
       redirect: 'manual',
       signal: AbortSignal.timeout(10_000),
     });

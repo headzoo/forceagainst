@@ -10,7 +10,7 @@ import { ActionList } from './action-list';
 import { SiteFooter } from './site-footer';
 import { SiteHeader } from './site-header';
 
-const selectedIssueStorageKey = 'forceAgainstSomething:selectedIssueSlug';
+const selectedIssueStorageKey = 'forceAgainst:selectedIssueSlug';
 const minimumIssuePlaceholderCount = 8;
 
 function splitHeadingEnding(heading: string) {

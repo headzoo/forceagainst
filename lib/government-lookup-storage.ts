@@ -1,6 +1,6 @@
 import { isRepresentativesResult, type RepresentativesResult } from '@/lib/government-representatives';
 
-export const GOVERNMENT_LOOKUP_STORAGE_KEY = 'forceAgainstSomething:governmentLookup';
+export const GOVERNMENT_LOOKUP_STORAGE_KEY = 'forceAgainst:governmentLookup';
 const STORAGE_VERSION = 2;
 const MAX_LOOKUP_AGE_MS = 30 * 24 * 60 * 60 * 1_000;
 

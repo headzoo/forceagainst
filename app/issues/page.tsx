@@ -9,8 +9,8 @@ import { createSiteMetadata } from '@/lib/site-metadata';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = createSiteMetadata({
-  title: 'Issues | Force Against Something',
-  description: 'Browse the issues covered by Force Against Something and find ways to take action.',
+  title: 'Issues | Force Against',
+  description: 'Browse the issues covered by Force Against and find ways to take action.',
   path: '/issues',
 });
 

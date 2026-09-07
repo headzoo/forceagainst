@@ -55,7 +55,7 @@ export async function POST(request: Request) {
   ]);
 
   const body = [
-    'FORCE AGAINST SOMETHING — PASSKEY RECOVERY CODES',
+    'FORCE AGAINST — PASSKEY RECOVERY CODES',
     '',
     'Each code can be used once to replace your passkey. Keep these somewhere safe.',
     'Creating another set invalidates every code in this file.',
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
   return new Response(body, {
     headers: {
       'Cache-Control': 'no-store, max-age=0',
-      'Content-Disposition': 'attachment; filename="force-against-something-passkey-recovery-codes.txt"',
+      'Content-Disposition': 'attachment; filename="force-against-passkey-recovery-codes.txt"',
       'Content-Type': 'text/plain; charset=utf-8',
       Expires: '0',
       Pragma: 'no-cache',

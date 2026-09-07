@@ -6,8 +6,8 @@ import { SiteHeader } from '@/app/site-header';
 import { createSiteMetadata } from '@/lib/site-metadata';
 
 export const metadata: Metadata = createSiteMetadata({
-  title: 'API | Force Against Something',
-  description: 'Use the Force Against Something JSON API and read-only MCP server.',
+  title: 'API | Force Against',
+  description: 'Use the Force Against JSON API and read-only MCP server.',
   path: '/api',
 });
 
@@ -74,7 +74,7 @@ export default function ApiPage() {
             </div>
 
             <h3>Example</h3>
-            <pre><code>{`curl https://forceagainstsomething.com/issue/criminal-justice.json`}</code></pre>
+            <pre><code>{`curl https://forceagainst.com/issue/criminal-justice.json`}</code></pre>
             <p>For local development, use <code>http://localhost:3000</code> as the base URL. Missing or unpublished records return a JSON response with a <code>404</code> status.</p>
 
           </div>
@@ -90,17 +90,17 @@ export default function ApiPage() {
 
             <div className={s.apiMcpAddress}>
               <small>REMOTE MCP URL</small>
-              <code>https://forceagainstsomething.com/mcp</code>
+              <code>https://forceagainst.com/mcp</code>
               <small>LOCAL MCP URL</small>
               <code>http://localhost:3000/mcp</code>
             </div>
 
             <h3>Client configuration</h3>
-            <p>In a client that supports remote MCP servers, add a server named <code>force-against-something</code> with the remote URL above. Clients that accept JSON configuration commonly use this shape:</p>
+            <p>In a client that supports remote MCP servers, add a server named <code>force-against</code> with the remote URL above. Clients that accept JSON configuration commonly use this shape:</p>
             <pre><code>{`{
   "mcpServers": {
-    "force-against-something": {
-      "url": "https://forceagainstsomething.com/mcp"
+    "force-against": {
+      "url": "https://forceagainst.com/mcp"
     }
   }
 }`}</code></pre>
@@ -121,7 +121,7 @@ export default function ApiPage() {
             <h2>Source<br />Code</h2>
           </div>
           <div className={s.apiSectionContent}>
-            <p>The source code for Force Against Something is available on GitHub. Browse the implementation, report an issue, or run your own local copy.</p>
+            <p>The source code for Force Against is available on GitHub. Browse the implementation, report an issue, or run your own local copy.</p>
             <a className={s.apiSourceLink} href="https://github.com/headzoo/forceagainstsomething" target="_blank" rel="noreferrer">
               <span>VIEW ON GITHUB</span>
               <b aria-hidden="true">↗</b>

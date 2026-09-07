@@ -6,8 +6,8 @@ import { SiteHeader } from '@/app/site-header';
 import { createSiteMetadata } from '@/lib/site-metadata';
 
 export const metadata: Metadata = createSiteMetadata({
-  title: 'Terms of Use | Force Against Something',
-  description: 'Read the terms that govern use of Force Against Something.',
+  title: 'Terms of Use | Force Against',
+  description: 'Read the terms that govern use of Force Against.',
   path: '/terms',
 });
 
@@ -21,7 +21,7 @@ export default function TermsPage() {
           <Link className={s.backLink} href="/">&larr; Back to all actions</Link>
           <p className={s.eyebrow}><span /> TERMS OF USE</p>
           <h1 className={s.legalTitle}>Use the site<br />with care.</h1>
-          <p className={s.legalHeroCopy}>These terms explain the rules for using Force Against Something and submitting action listings.</p>
+          <p className={s.legalHeroCopy}>These terms explain the rules for using Force Against and submitting action listings.</p>
         </div>
         <aside className={s.legalHeroAside}>
           <p className={s.step}>EFFECTIVE DATE</p>
@@ -46,13 +46,13 @@ export default function TermsPage() {
         <article className={s.legalDocument}>
           <section id="acceptance" className={s.legalSection}>
             <h2>Acceptance</h2>
-            <p>By accessing or using Force Against Something, you agree to these terms. If you do not agree, do not use the site.</p>
+            <p>By accessing or using Force Against, you agree to these terms. If you do not agree, do not use the site.</p>
             <p>We may update these terms from time to time. The updated version applies when it is posted, unless a later effective date is stated.</p>
           </section>
 
           <section id="service" className={s.legalSection}>
             <h2>The Service</h2>
-            <p>Force Against Something is a directory of civic actions, organizations, public government information, and related tools. We help people find petitions, lawsuits, campaigns, representative contact information, and other ways to act.</p>
+            <p>Force Against is a directory of civic actions, organizations, public government information, and related tools. We help people find petitions, lawsuits, campaigns, representative contact information, and other ways to act.</p>
             <p>We do not run, sponsor, or control the third-party actions listed on the site unless we say so plainly. Listings can become outdated, and you are responsible for reviewing the destination site before signing, donating, volunteering, contacting an official, or taking any other action.</p>
             <p>Nothing on the site is legal, financial, medical, political, or professional advice.</p>
           </section>
@@ -84,7 +84,7 @@ export default function TermsPage() {
           <section id="disclaimers" className={s.legalSection}>
             <h2>Disclaimers and Liability</h2>
             <p>The site is provided &quot;as is&quot; and &quot;as available.&quot; We do not promise that the site will be uninterrupted, error-free, complete, current, secure, or suitable for any particular purpose.</p>
-            <p>To the fullest extent allowed by law, Force Against Something and its operators will not be liable for indirect, incidental, special, consequential, exemplary, or punitive damages, or for lost profits, lost data, or loss of goodwill arising from use of the site.</p>
+            <p>To the fullest extent allowed by law, Force Against and its operators will not be liable for indirect, incidental, special, consequential, exemplary, or punitive damages, or for lost profits, lost data, or loss of goodwill arising from use of the site.</p>
           </section>
 
           <section id="contact" className={s.legalSection}>

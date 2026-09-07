@@ -19,7 +19,7 @@ import {
 } from 'react';
 import { SignatureModal } from './signature-modal';
 
-const LETTER_STORAGE_KEY = 'forceAgainstSomething:letterBuilder:v1';
+const LETTER_STORAGE_KEY = 'forceAgainst:letterBuilder:v1';
 
 type LetterFields = {
   subject: string;
@@ -519,7 +519,7 @@ export function LetterBuilder({ member, dateLabel, actionContext }: LetterBuilde
         title: subject,
         subject,
         author: fields.fullName,
-        creator: 'Force Against Something',
+        creator: 'Force Against',
       });
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(11);

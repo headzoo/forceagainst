@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type KeyboardEvent as ReactKeyboardEvent, useEffect, useId, useRef, useState } from 'react';
 import { AuthControl } from '@/app/auth-control';
+import navbarLogo from '@/assets/logo-2.png';
 import type { SearchActionResult, SearchOrganizationResult, SearchResults } from '@/lib/db';
 
 type SiteHeaderProps = {
@@ -137,8 +138,8 @@ export function SiteHeader({ showSubmitLink = true }: SiteHeaderProps) {
 
   return (
     <header className={s.siteHeader}>
-      <Link className={cn(s.brand, s.headerBrand)} href="/" aria-label="Force Against Something home">
-        <Image src="/header-wordmark-star.png" alt="Force Against Something" width={620} height={99} priority unoptimized />
+      <Link className={cn(s.brand, s.headerBrand)} href="/" aria-label="Force Against home">
+        <Image src={navbarLogo} alt="Force Against" priority unoptimized />
       </Link>
       <div className={s.siteSearch} ref={rootRef}>
         <button className={s.siteSearchToggle}

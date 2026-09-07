@@ -53,7 +53,7 @@ const passkeyRecoverySchema = {
 } satisfies BetterAuthPlugin;
 
 export const auth = betterAuth({
-  appName: 'Force Against Something',
+  appName: 'Force Against',
   baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3000',
   database: drizzleAdapter(db, {
     provider: 'pg',
@@ -113,7 +113,7 @@ export const auth = betterAuth({
   plugins: [
     passkeyRecoverySchema,
     passkey({
-      rpName: 'Force Against Something',
+      rpName: 'Force Against',
       authenticatorSelection: {
         residentKey: 'required',
         userVerification: 'discouraged',

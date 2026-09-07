@@ -6,8 +6,8 @@ import { SubmissionFlow } from './submission-flow';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = createSiteMetadata({
-  title: 'Submit an action | Force Against Something',
-  description: 'Submit a petition, lawsuit, or campaign for review in the Force Against Something directory.',
+  title: 'Submit an action | Force Against',
+  description: 'Submit a petition, lawsuit, or campaign for review in the Force Against directory.',
   path: '/submit',
 });
 

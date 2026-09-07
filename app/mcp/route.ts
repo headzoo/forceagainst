@@ -240,10 +240,10 @@ const handler = createMcpHandler((server) => {
   );
 }, {
   serverInfo: {
-    name: 'force-against-something',
+    name: 'force-against',
     version: '1.0.0',
   },
-  instructions: 'Use these read-only tools to discover published civic actions, issues, and organizations from Force Against Something.',
+  instructions: 'Use these read-only tools to discover published civic actions, issues, and organizations from Force Against.',
   maxSubscriptions: 0,
 });
 

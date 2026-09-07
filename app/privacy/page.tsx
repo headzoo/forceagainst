@@ -6,8 +6,8 @@ import { SiteHeader } from '@/app/site-header';
 import { createSiteMetadata } from '@/lib/site-metadata';
 
 export const metadata: Metadata = createSiteMetadata({
-  title: 'Privacy Policy | Force Against Something',
-  description: 'Read how Force Against Something collects, uses, and protects information.',
+  title: 'Privacy Policy | Force Against',
+  description: 'Read how Force Against collects, uses, and protects information.',
   path: '/privacy',
 });
 
@@ -21,7 +21,7 @@ export default function PrivacyPage() {
           <Link className={s.backLink} href="/">&larr; Back to all actions</Link>
           <p className={s.eyebrow}><span /> PRIVACY POLICY</p>
           <h1 className={s.legalTitle}>Privacy for<br />civic action.</h1>
-          <p className={s.legalHeroCopy}>This policy explains what information Force Against Something collects, why we use it, and the choices available to you.</p>
+          <p className={s.legalHeroCopy}>This policy explains what information Force Against collects, why we use it, and the choices available to you.</p>
         </div>
         <aside className={s.legalHeroAside}>
           <p className={s.step}>EFFECTIVE DATE</p>
@@ -46,7 +46,7 @@ export default function PrivacyPage() {
         <article className={s.legalDocument}>
           <section id="scope" className={s.legalSection}>
             <h2>Scope</h2>
-            <p>This policy applies to Force Against Something and the public tools we operate from this site. It does not apply to third-party campaigns, organizations, government sites, payment processors, social platforms, or other sites we link to.</p>
+            <p>This policy applies to Force Against and the public tools we operate from this site. It does not apply to third-party campaigns, organizations, government sites, payment processors, social platforms, or other sites we link to.</p>
           </section>
 
           <section id="information" className={s.legalSection}>

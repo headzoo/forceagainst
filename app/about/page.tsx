@@ -6,8 +6,8 @@ import { SiteHeader } from '@/app/site-header';
 import { createSiteMetadata } from '@/lib/site-metadata';
 
 export const metadata: Metadata = createSiteMetadata({
-  title: 'About | Force Against Something',
-  description: 'Learn about the mission and editorial approach behind Force Against Something.',
+  title: 'About | Force Against',
+  description: 'Learn about the mission and editorial approach behind Force Against.',
   path: '/about',
 });
 
@@ -22,7 +22,7 @@ export default function AboutPage() {
           <p className={s.eyebrow}><span /> ABOUT</p>
           <h1 className={s.legalTitle}>Civic action<br />without a side.</h1>
           <p className={s.legalHeroCopy}>
-            Force Against Something exists to make civic action easier to find, compare, and take without asking people to first adopt a single party line.
+            Force Against exists to make civic action easier to find, compare, and take without asking people to first adopt a single party line.
           </p>
         </div>
         <aside className={s.legalHeroAside}>
@@ -45,7 +45,7 @@ export default function AboutPage() {
           <section id="mission" className={s.legalSection}>
             <h2>Mission</h2>
             <p>
-              Force Against Something is a directory for people who want to respond to the world around them but do not always know where to start. We collect petitions, lawsuits, campaigns, representative contact tools, organization pages, and other public actions in one place so the next useful step is easier to see.
+              Force Against is a directory for people who want to respond to the world around them but do not always know where to start. We collect petitions, lawsuits, campaigns, representative contact tools, organization pages, and other public actions in one place so the next useful step is easier to see.
             </p>
             <p>
               Our goal is practical: reduce the friction between caring about an issue and doing something concrete. A good listing should tell you what the action is, who is behind it, where it leads, and why someone might consider it.

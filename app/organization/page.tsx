@@ -5,8 +5,8 @@ import { OrganizationSettings } from './settings';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = createSiteMetadata({
-  title: 'Your organization | Force Against Something',
-  description: 'Manage your organization profile and its action submissions on Force Against Something.',
+  title: 'Your organization | Force Against',
+  description: 'Manage your organization profile and its action submissions on Force Against.',
   path: '/organization',
 });
 

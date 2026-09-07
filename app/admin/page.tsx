@@ -5,8 +5,8 @@ import { AdminReview } from './review';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = createSiteMetadata({
-  title: 'Action review | Force Against Something',
-  description: 'Review pending action submissions for the Force Against Something directory.',
+  title: 'Action review | Force Against',
+  description: 'Review pending action submissions for the Force Against directory.',
   path: '/admin',
 });
 

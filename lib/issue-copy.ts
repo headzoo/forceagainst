@@ -69,4 +69,4 @@ export const neutralIssueSidebar = `**How to use this page**
 
 Browse petitions, lawsuits, and campaigns related to this topic. Listings may represent different viewpoints and proposed outcomes.
 
-Organizations working on the issue from any perspective may submit relevant actions for review. A listing indicates relevance to the issue, not endorsement by Force Against Something.`;
+Organizations working on the issue from any perspective may submit relevant actions for review. A listing indicates relevance to the issue, not endorsement by Force Against.`;

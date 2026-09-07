@@ -57,8 +57,8 @@ async function findAction(params: ActionPageProps['params']) {
 export async function generateMetadata({ params }: ActionPageProps): Promise<Metadata> {
   const action = await findAction(params);
   if (!action) return createSiteMetadata({
-    title: 'Action not found | Force Against Something',
-    description: 'The requested action could not be found on Force Against Something.',
+    title: 'Action not found | Force Against',
+    description: 'The requested action could not be found on Force Against.',
     path: '/',
   });
 
@@ -68,7 +68,7 @@ export async function generateMetadata({ params }: ActionPageProps): Promise<Met
     `Learn how to take action with ${action.organization}.`,
   );
   return createSiteMetadata({
-    title: `${action.title} | Force Against Something`,
+    title: `${action.title} | Force Against`,
     description,
     path: url,
     image: action.openGraph?.image,

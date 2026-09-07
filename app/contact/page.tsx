@@ -7,8 +7,8 @@ import { createSiteMetadata } from '@/lib/site-metadata';
 import { ContactForm } from './contact-form';
 
 export const metadata: Metadata = createSiteMetadata({
-  title: 'Contact | Force Against Something',
-  description: 'Contact Force Against Something with questions, corrections, and partnership notes.',
+  title: 'Contact | Force Against',
+  description: 'Contact Force Against with questions, corrections, and partnership notes.',
   path: '/contact',
 });
 
@@ -49,7 +49,7 @@ export default async function ContactPage({ searchParams }: ContactPageProps) {
           <Link className={s.backLink} href="/">← Back to all actions</Link>
           <p className={s.eyebrow}><span /> CONTACT</p>
           <h1 className={s.contactTitle}>Get in touch.</h1>
-          <p className={s.contactHeadingCopy}>Send corrections, questions, partnership notes, or anything else that should reach the people behind Force Against Something.</p>
+          <p className={s.contactHeadingCopy}>Send corrections, questions, partnership notes, or anything else that should reach the people behind Force Against.</p>
         </div>
 
         <div className={s.contactPanel}>

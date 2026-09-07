@@ -13,7 +13,7 @@ import { GovernmentRosterNav } from './government-roster-nav';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = createSiteMetadata({
-  title: 'Your Government | Force Against Something',
+  title: 'Your Government | Force Against',
   description: 'Find your U.S. representatives and browse the current Senate and House roster.',
   path: '/government',
 });

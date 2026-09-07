@@ -18,7 +18,7 @@ export async function sendVerificationEmail({ email, name, url }: VerificationEm
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.AUTH_FROM_EMAIL
     ?? process.env.CONTACT_FROM_EMAIL
-    ?? 'Force Against Something <contact@forceagainstsomething.com>';
+    ?? 'Force Against <contact@forceagainst.com>';
 
   if (!apiKey) throw new Error('RESEND_API_KEY is not configured for account verification.');
 
@@ -29,12 +29,12 @@ export async function sendVerificationEmail({ email, name, url }: VerificationEm
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
-      'User-Agent': 'force-against-something/1.0',
+      'User-Agent': 'force-against/1.0',
     },
     body: JSON.stringify({
       from,
       to: [email],
-      subject: 'Verify your Force Against Something account',
+      subject: 'Verify your Force Against account',
       text: `Hi ${name},\n\nVerify your email address to join action-page conversations:\n\n${url}\n\nIf you did not create this account, you can ignore this email.`,
       html: `<p>Hi ${safeName},</p><p>Verify your email address to join action-page conversations.</p><p><a href="${safeUrl}">Verify email address</a></p><p>If you did not create this account, you can ignore this email.</p>`,
     }),

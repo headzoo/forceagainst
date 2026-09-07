@@ -11,8 +11,8 @@ import { LikedActionsList } from './liked-actions-list';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = createSiteMetadata({
-  title: 'Liked actions | Force Against Something',
-  description: 'The actions you liked on Force Against Something.',
+  title: 'Liked actions | Force Against',
+  description: 'The actions you liked on Force Against.',
   path: '/liked',
 });
 

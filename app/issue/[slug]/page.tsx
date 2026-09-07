@@ -23,8 +23,8 @@ async function findIssue(params: IssuePageProps['params']) {
 export async function generateMetadata({ params }: IssuePageProps): Promise<Metadata> {
   const issue = await findIssue(params);
   if (!issue) return createSiteMetadata({
-    title: 'Issue not found | Force Against Something',
-    description: 'The requested issue could not be found on Force Against Something.',
+    title: 'Issue not found | Force Against',
+    description: 'The requested issue could not be found on Force Against.',
     path: '/issues',
   });
 
@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: IssuePageProps): Promise<Meta
   );
   const url = `/i/${issue.slug}`;
   return createSiteMetadata({
-    title: `${issue.name} | Force Against Something`,
+    title: `${issue.name} | Force Against`,
     description,
     path: url,
   });

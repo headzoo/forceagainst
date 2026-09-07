@@ -23,18 +23,18 @@ async function findOrganization(params: OrganizationPageProps['params']) {
 export async function generateMetadata({ params }: OrganizationPageProps): Promise<Metadata> {
   const organization = await findOrganization(params);
   if (!organization) return createSiteMetadata({
-    title: 'Organization not found | Force Against Something',
-    description: 'The requested organization could not be found on Force Against Something.',
+    title: 'Organization not found | Force Against',
+    description: 'The requested organization could not be found on Force Against.',
     path: '/orgs',
   });
 
   const description = summarizeForMetadata(
     organization.description,
-    `Learn about ${organization.name} and view its actions on Force Against Something.`,
+    `Learn about ${organization.name} and view its actions on Force Against.`,
   );
   const url = `/o/${organization.slug}`;
   return createSiteMetadata({
-    title: `${organization.name} | Force Against Something`,
+    title: `${organization.name} | Force Against`,
     description,
     path: url,
   });

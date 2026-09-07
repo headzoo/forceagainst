@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
+import siteLogo from '@/assets/logo-2.png';
 
-export const SITE_NAME = 'Force Against Something';
-export const SITE_URL = 'https://forceagainstsomething.com';
+export const SITE_NAME = 'Force Against';
+export const SITE_URL = 'https://forceagainst.com';
 
 const SITE_OPEN_GRAPH_IMAGE = {
-  url: '/og-logo.png',
-  width: 1200,
-  height: 630,
+  url: siteLogo.src,
+  width: siteLogo.width,
+  height: siteLogo.height,
   alt: SITE_NAME,
 };
 
