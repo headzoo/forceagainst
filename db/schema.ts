@@ -359,6 +359,112 @@ export const congressMembers = pgTable('congress_members', {
   ),
 ]);
 
+export const legislativeSource = pgEnum('legislative_source', ['legiscan', 'congress']);
+export const legislativeLifecycleStage = pgEnum('legislative_lifecycle_stage', [
+  'introduced',
+  'committee',
+  'floor',
+  'cross_chamber',
+  'enrolled',
+  'executive',
+  'law',
+  'vetoed',
+  'failed',
+  'other',
+]);
+
+export type LegislativeSyncCheckpointMetadata = {
+  requestCount?: number;
+  pendingDetailCount?: number;
+  lastCompletedJurisdiction?: string;
+  windowFrom?: string;
+  windowTo?: string;
+  billsAccepted?: number;
+  resumeAfter?: string;
+};
+
+export const legislativeSessions = pgTable('legislative_sessions', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  source: legislativeSource('source').notNull(),
+  providerSessionId: text('provider_session_id').notNull(),
+  jurisdiction: text('jurisdiction').notNull(),
+  displayName: text('display_name').notNull(),
+  yearStart: integer('year_start'),
+  yearEnd: integer('year_end'),
+  startsAt: timestamp('starts_at', { withTimezone: true }),
+  endsAt: timestamp('ends_at', { withTimezone: true }),
+  isCurrent: boolean('is_current').notNull().default(false),
+  syncedAt: timestamp('synced_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('legislative_sessions_source_provider_unique').on(table.source, table.providerSessionId),
+  index('legislative_sessions_current_jurisdiction_idx').on(table.jurisdiction, table.isCurrent),
+]);
+
+export const legislativeBills = pgTable('legislative_bills', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  source: legislativeSource('source').notNull(),
+  providerBillId: text('provider_bill_id').notNull(),
+  sessionId: bigint('session_id', { mode: 'number' }).notNull().references(() => legislativeSessions.id, { onDelete: 'restrict' }),
+  jurisdiction: text('jurisdiction').notNull(),
+  billNumber: text('bill_number').notNull(),
+  billType: text('bill_type'),
+  title: text('title').notNull(),
+  description: text('description').notNull().default(''),
+  originChamber: text('origin_chamber'),
+  latestActionBody: text('latest_action_body'),
+  latestActionText: text('latest_action_text'),
+  latestActionDate: timestamp('latest_action_date', { withTimezone: true }),
+  stage: legislativeLifecycleStage('stage').notNull().default('other'),
+  isActive: boolean('is_active').notNull().default(false),
+  providerStatus: text('provider_status'),
+  providerStatusCode: text('provider_status_code'),
+  publicSourceUrl: text('public_source_url'),
+  masterChangeHash: text('master_change_hash'),
+  detailChangeHash: text('detail_change_hash'),
+  providerUpdatedAt: timestamp('provider_updated_at', { withTimezone: true }),
+  detailsPending: boolean('details_pending').notNull().default(false),
+  syncedAt: timestamp('synced_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('legislative_bills_source_provider_unique').on(table.source, table.providerBillId),
+  index('legislative_bills_state_active_list_idx').on(table.source, table.jurisdiction, table.isActive, table.sessionId),
+  index('legislative_bills_federal_origin_active_idx').on(table.source, table.sessionId, table.originChamber, table.isActive),
+  index('legislative_bills_session_idx').on(table.sessionId),
+]);
+
+export const legislativeBillActions = pgTable('legislative_bill_actions', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  billId: bigint('bill_id', { mode: 'number' }).notNull().references(() => legislativeBills.id, { onDelete: 'cascade' }),
+  providerActionKey: text('provider_action_key').notNull(),
+  actionDate: timestamp('action_date', { withTimezone: true }),
+  body: text('body'),
+  description: text('description').notNull(),
+  providerActionCode: text('provider_action_code'),
+  stage: legislativeLifecycleStage('stage'),
+  sortOrder: integer('sort_order').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('legislative_bill_actions_bill_provider_key_unique').on(table.billId, table.providerActionKey),
+  index('legislative_bill_actions_bill_order_idx').on(table.billId, table.sortOrder),
+]);
+
+export const legislativeSyncCheckpoints = pgTable('legislative_sync_checkpoints', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  source: legislativeSource('source').notNull(),
+  scope: text('scope').notNull(),
+  watermark: text('watermark'),
+  lastSuccessAt: timestamp('last_success_at', { withTimezone: true }),
+  metadata: jsonb('metadata').$type<LegislativeSyncCheckpointMetadata>(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('legislative_sync_checkpoints_source_scope_unique').on(table.source, table.scope),
+]);
+
 export type Issue = typeof issues.$inferSelect;
 export type Organization = typeof orgs.$inferSelect;
 export type OrganizationMember = typeof organizationMembers.$inferSelect;
@@ -374,3 +480,11 @@ export type UserCommentModeration = typeof userCommentModeration.$inferSelect;
 export type CommentModerationAction = typeof commentModerationActions.$inferSelect;
 export type CongressMember = typeof congressMembers.$inferSelect;
 export type CongressMemberInsert = typeof congressMembers.$inferInsert;
+export type LegislativeSession = typeof legislativeSessions.$inferSelect;
+export type LegislativeSessionInsert = typeof legislativeSessions.$inferInsert;
+export type LegislativeBill = typeof legislativeBills.$inferSelect;
+export type LegislativeBillInsert = typeof legislativeBills.$inferInsert;
+export type LegislativeBillAction = typeof legislativeBillActions.$inferSelect;
+export type LegislativeBillActionInsert = typeof legislativeBillActions.$inferInsert;
+export type LegislativeSyncCheckpoint = typeof legislativeSyncCheckpoints.$inferSelect;
+export type LegislativeSyncCheckpointInsert = typeof legislativeSyncCheckpoints.$inferInsert;

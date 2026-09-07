@@ -85,6 +85,37 @@ pnpm run government:sync
 
 The production job calls `/api/cron/sync-congress` daily using the same `CRON_SECRET` bearer authorization as the weekly action-discovery cron. `GOOGLE_CIVIC_API_KEY` is reserved for the separate private address-to-district lookup. `NEXT_PUBLIC_GOOGLE_PLACES_API_KEY` powers optional street-address autocomplete on that form; restrict it to Places API (New) and this site’s HTTP referrers.
 
+## State and federal bill sync
+
+Legislation directory pages read only from the local database. Two separate nightly secured crons mirror state bills from LegiScan and current-Congress federal bills from Congress.gov. Provider keys stay server-side; page renders never call LegiScan or Congress.gov directly.
+
+Apply migrations before the first live sync:
+
+```bash
+pnpm run db:migrate
+```
+
+Set `LEGISCAN_API_KEY`, `CONGRESS_API_KEY`, and `CRON_SECRET` in `.env.local` (and in Vercel for production). `LEGISCAN_DETAIL_BUDGET` is optional and defaults to `200` `getBill` calls per run. `CONGRESS_DETAIL_BUDGET` is optional and defaults to `200` current-Congress bills whose details and actions are fetched per run.
+
+Bootstrap or inspect a sync locally:
+
+```bash
+pnpm run state-bills:sync -- --dry-run --state=hawaii --detail-budget=5
+pnpm run state-bills:sync -- --state=HI
+pnpm run state-bills:sync
+pnpm run federal-bills:sync -- --dry-run
+pnpm run federal-bills:sync
+```
+
+State sync supports `--dry-run`, `--state=<two-letter-code-or-canonical-slug>`, and `--detail-budget=<0-10000>`. Omit `--state` for the resumable all-state nightly rotation. A budget-limited run that leaves pending detail work is successful-with-backlog, not data loss. Federal sync supports `--dry-run` only. The first live run bootstraps the current Congress across budgeted, resumable runs; later runs use an overlap-safe update watermark. A 429, timeout, or detail-budget stop keeps that watermark unchanged, persists an in-window resume cursor, and is successful-with-backlog.
+
+Production schedules in `vercel.json` run state bills at 02:00 UTC, federal bills at 03:00 UTC, congressional roster sync at 04:00 UTC, and action discovery weekly at 05:00 UTC Sunday. Secured routes:
+
+- `/api/cron/sync-state-bills`
+- `/api/cron/sync-federal-bills`
+
+Each requires `Authorization: Bearer ${CRON_SECRET}`.
+
 ## Available scripts
 
 - `pnpm run dev` — start the development server
@@ -93,6 +124,8 @@ The production job calls `/api/cron/sync-congress` daily using the same `CRON_SE
 - `pnpm run lint` — lint the project
 - `pnpm run actions:discover` — search for new actions and add them to the admin review queue
 - `pnpm run government:sync` — mirror the current Congress roster into the database
+- `pnpm run state-bills:sync` — mirror state legislation from LegiScan into the database
+- `pnpm run federal-bills:sync` — mirror current-Congress federal bills from Congress.gov into the database
 - `pnpm run db:generate` — generate a Drizzle migration from schema changes
 - `pnpm run db:migrate` — apply pending database migrations
 - `pnpm run auth:generate` — regenerate the Better Auth database schema

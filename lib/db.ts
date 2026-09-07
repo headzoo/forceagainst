@@ -10,6 +10,9 @@ import {
   commentUserBlocks,
   congressMembers,
   issues,
+  legislativeBills,
+  legislativeSessions,
+  legislativeSyncCheckpoints,
   orgs,
   user,
   type ActionRecord,
@@ -19,6 +22,20 @@ import {
   type Issue,
 } from '@/db/schema';
 import type { ActionCommentView } from '@/lib/action-comments';
+import {
+  currentCongressForDate,
+  emptyLegislativeBillDirectoryResult,
+  emptyLegislativeLifecycleCounts,
+  FEDERAL_LEGISLATION_SYNC_SCOPE,
+  isFederalOriginChamber,
+  parseLegislativePage,
+  parseLegislativePageSize,
+  stateLegislationSyncScope,
+  toLegislativeBillListItem,
+  type LegislativeBillDirectoryResult,
+  type LegislativeLifecycleCounts,
+  type LegislativeLifecycleStage,
+} from '@/lib/legislative-bills';
 
 export type {
   ActionRecord,
@@ -28,6 +45,10 @@ export type {
   Issue,
   Organization,
 } from '@/db/schema';
+export type {
+  LegislativeBillDirectoryResult,
+  LegislativeBillListItem,
+} from '@/lib/legislative-bills';
 
 const { searchTsv: _actionsSearchTsv, ...actionColumns } = getTableColumns(actions);
 void _actionsSearchTsv;
@@ -636,5 +657,234 @@ export async function searchPublishedContent(query: string): Promise<SearchResul
         description: description.length > 160 ? `${description.slice(0, 157).trimEnd()}…` : description,
       };
     }),
+  };
+}
+
+const legislativeBillListColumns = {
+  id: legislativeBills.id,
+  source: legislativeBills.source,
+  providerBillId: legislativeBills.providerBillId,
+  jurisdiction: legislativeBills.jurisdiction,
+  billNumber: legislativeBills.billNumber,
+  billType: legislativeBills.billType,
+  title: legislativeBills.title,
+  originChamber: legislativeBills.originChamber,
+  latestActionBody: legislativeBills.latestActionBody,
+  latestActionText: legislativeBills.latestActionText,
+  latestActionDate: legislativeBills.latestActionDate,
+  stage: legislativeBills.stage,
+  isActive: legislativeBills.isActive,
+  publicSourceUrl: legislativeBills.publicSourceUrl,
+  sessionLabel: legislativeSessions.displayName,
+  detailsPending: legislativeBills.detailsPending,
+};
+
+function legislativeBillListOrder() {
+  return [
+    sql`${legislativeBills.latestActionDate} DESC NULLS LAST`,
+    asc(legislativeBills.billNumber),
+    asc(legislativeBills.id),
+  ];
+}
+
+function legislativeDirectoryPagination(total: number, requestedPage: unknown, requestedPageSize: unknown) {
+  const pageSize = parseLegislativePageSize(requestedPageSize);
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const page = Math.min(parseLegislativePage(requestedPage), totalPages);
+  return { page, pageSize, totalPages };
+}
+
+function toLifecycleCounts(rows: Array<{ stage: LegislativeLifecycleStage; total: number }>): LegislativeLifecycleCounts {
+  const counts = emptyLegislativeLifecycleCounts();
+  for (const row of rows) counts[row.stage] = row.total;
+  return counts;
+}
+
+async function getLegislativeSyncTimestamp(source: 'legiscan' | 'congress', scope: string) {
+  const [checkpoint] = await db
+    .select({ lastSuccessAt: legislativeSyncCheckpoints.lastSuccessAt })
+    .from(legislativeSyncCheckpoints)
+    .where(and(
+      eq(legislativeSyncCheckpoints.source, source),
+      eq(legislativeSyncCheckpoints.scope, scope),
+    ))
+    .limit(1);
+
+  return checkpoint?.lastSuccessAt ?? null;
+}
+
+export async function getActiveStateLegislation(
+  stateCode: string,
+  requestedPage?: unknown,
+  requestedPageSize?: unknown,
+): Promise<LegislativeBillDirectoryResult> {
+  const jurisdiction = stateCode.toUpperCase();
+  const pageSize = parseLegislativePageSize(requestedPageSize);
+  const page = parseLegislativePage(requestedPage);
+  const activeStateCondition = and(
+    eq(legislativeBills.source, 'legiscan'),
+    eq(legislativeBills.jurisdiction, jurisdiction),
+    eq(legislativeBills.isActive, true),
+    eq(legislativeSessions.source, 'legiscan'),
+    eq(legislativeSessions.jurisdiction, jurisdiction),
+    eq(legislativeSessions.isCurrent, true),
+  );
+
+  const [totalRow, countRows, sessionRow, lastSuccessfulSyncAt] = await Promise.all([
+    db
+      .select({ total: count() })
+      .from(legislativeBills)
+      .innerJoin(legislativeSessions, eq(legislativeBills.sessionId, legislativeSessions.id))
+      .where(activeStateCondition)
+      .then((rows) => rows[0]),
+    db
+      .select({ stage: legislativeBills.stage, total: count() })
+      .from(legislativeBills)
+      .innerJoin(legislativeSessions, eq(legislativeBills.sessionId, legislativeSessions.id))
+      .where(activeStateCondition)
+      .groupBy(legislativeBills.stage),
+    db
+      .select({ displayName: legislativeSessions.displayName })
+      .from(legislativeSessions)
+      .where(and(
+        eq(legislativeSessions.source, 'legiscan'),
+        eq(legislativeSessions.jurisdiction, jurisdiction),
+        eq(legislativeSessions.isCurrent, true),
+      ))
+      .orderBy(desc(legislativeSessions.yearEnd), desc(legislativeSessions.id))
+      .limit(1)
+      .then((rows) => rows[0]),
+    getLegislativeSyncTimestamp('legiscan', stateLegislationSyncScope(jurisdiction)),
+  ]);
+
+  const total = totalRow?.total ?? 0;
+  const pagination = legislativeDirectoryPagination(total, page, pageSize);
+
+  if (total === 0) {
+    return {
+      ...emptyLegislativeBillDirectoryResult({
+        page: pagination.page,
+        pageSize: pagination.pageSize,
+        jurisdiction,
+      }),
+      lastSuccessfulSyncAt,
+      sessionLabel: sessionRow?.displayName ?? null,
+    };
+  }
+
+  const rows = await db
+    .select(legislativeBillListColumns)
+    .from(legislativeBills)
+    .innerJoin(legislativeSessions, eq(legislativeBills.sessionId, legislativeSessions.id))
+    .where(activeStateCondition)
+    .orderBy(...legislativeBillListOrder())
+    .limit(pagination.pageSize)
+    .offset((pagination.page - 1) * pagination.pageSize);
+
+  return {
+    items: rows.map(toLegislativeBillListItem),
+    page: pagination.page,
+    pageSize: pagination.pageSize,
+    total,
+    totalPages: pagination.totalPages,
+    lifecycleCounts: toLifecycleCounts(countRows),
+    lastSuccessfulSyncAt,
+    sessionLabel: sessionRow?.displayName ?? null,
+    jurisdiction,
+  };
+}
+
+export async function getActiveFederalLegislation(
+  originChamber: string,
+  requestedPage?: unknown,
+  requestedPageSize?: unknown,
+  now: Date = new Date(),
+): Promise<LegislativeBillDirectoryResult> {
+  const pageSize = parseLegislativePageSize(requestedPageSize);
+  const page = parseLegislativePage(requestedPage);
+  const congress = currentCongressForDate(now);
+
+  if (!isFederalOriginChamber(originChamber)) {
+    return emptyLegislativeBillDirectoryResult({
+      page,
+      pageSize,
+      jurisdiction: 'US',
+      congress,
+    });
+  }
+
+  const activeFederalCondition = and(
+    eq(legislativeBills.source, 'congress'),
+    eq(legislativeBills.originChamber, originChamber),
+    eq(legislativeBills.isActive, true),
+    eq(legislativeSessions.source, 'congress'),
+    eq(legislativeSessions.jurisdiction, 'US'),
+    eq(legislativeSessions.providerSessionId, String(congress)),
+  );
+
+  const [totalRow, countRows, sessionRow, lastSuccessfulSyncAt] = await Promise.all([
+    db
+      .select({ total: count() })
+      .from(legislativeBills)
+      .innerJoin(legislativeSessions, eq(legislativeBills.sessionId, legislativeSessions.id))
+      .where(activeFederalCondition)
+      .then((rows) => rows[0]),
+    db
+      .select({ stage: legislativeBills.stage, total: count() })
+      .from(legislativeBills)
+      .innerJoin(legislativeSessions, eq(legislativeBills.sessionId, legislativeSessions.id))
+      .where(activeFederalCondition)
+      .groupBy(legislativeBills.stage),
+    db
+      .select({ displayName: legislativeSessions.displayName })
+      .from(legislativeSessions)
+      .where(and(
+        eq(legislativeSessions.source, 'congress'),
+        eq(legislativeSessions.jurisdiction, 'US'),
+        eq(legislativeSessions.providerSessionId, String(congress)),
+      ))
+      .limit(1)
+      .then((rows) => rows[0]),
+    getLegislativeSyncTimestamp('congress', FEDERAL_LEGISLATION_SYNC_SCOPE),
+  ]);
+
+  const total = totalRow?.total ?? 0;
+  const pagination = legislativeDirectoryPagination(total, page, pageSize);
+
+  if (total === 0) {
+    return {
+      ...emptyLegislativeBillDirectoryResult({
+        page: pagination.page,
+        pageSize: pagination.pageSize,
+        jurisdiction: 'US',
+        originChamber,
+        congress,
+      }),
+      lastSuccessfulSyncAt,
+      sessionLabel: sessionRow?.displayName ?? null,
+    };
+  }
+
+  const rows = await db
+    .select(legislativeBillListColumns)
+    .from(legislativeBills)
+    .innerJoin(legislativeSessions, eq(legislativeBills.sessionId, legislativeSessions.id))
+    .where(activeFederalCondition)
+    .orderBy(...legislativeBillListOrder())
+    .limit(pagination.pageSize)
+    .offset((pagination.page - 1) * pagination.pageSize);
+
+  return {
+    items: rows.map(toLegislativeBillListItem),
+    page: pagination.page,
+    pageSize: pagination.pageSize,
+    total,
+    totalPages: pagination.totalPages,
+    lifecycleCounts: toLifecycleCounts(countRows),
+    lastSuccessfulSyncAt,
+    sessionLabel: sessionRow?.displayName ?? null,
+    jurisdiction: 'US',
+    originChamber,
+    congress,
   };
 }

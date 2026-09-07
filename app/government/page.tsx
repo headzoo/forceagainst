@@ -8,13 +8,14 @@ import { createSiteMetadata } from '@/lib/site-metadata';
 import { stateHeading } from '@/lib/us-states';
 import { CongressMemberCard } from './congress-member-card';
 import { FindRepresentatives } from './find-representatives';
+import { GovernmentLegislationNav } from './government-legislation-nav';
 import { GovernmentRosterNav } from './government-roster-nav';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = createSiteMetadata({
   title: 'Your Government | Force Against',
-  description: 'Find your U.S. representatives and browse the current Senate and House roster.',
+  description: 'Find your U.S. representatives, browse the congressional roster, and track active federal and state legislation.',
   path: '/government',
 });
 
@@ -89,10 +90,21 @@ export default async function GovernmentPage() {
           <p className={s.eyebrow}><span /> YOUR GOVERNMENT</p>
           <h1 className={s.governmentTitle}>Representatives<br />and Senators.</h1>
           <p className={s.governmentHeadingCopy}>
-            Look up who represents a U.S. street address, then browse the full current congressional roster mirrored from Congress.gov.
+            Look up who represents a U.S. street address, browse the current congressional roster, and track active bills in Congress and every state legislature.
           </p>
         </div>
         <FindRepresentatives />
+      </section>
+
+      <section className={s.governmentLegislationShell} aria-labelledby="track-legislation-heading">
+        <div className={s.governmentLegislationIntro}>
+          <p className={s.eyebrow}><span /> TRACK LEGISLATION</p>
+          <h2 id="track-legislation-heading">Active bills.</h2>
+          <p>
+            Browse federal bills by originating chamber or open a state directory for active legislation in the current session.
+          </p>
+        </div>
+        <GovernmentLegislationNav />
       </section>
 
       <section className={s.governmentRosterShell} aria-labelledby="full-roster-heading">

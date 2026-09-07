@@ -16,6 +16,8 @@
     "issues:backfill-sidebars": "tsx --env-file=.env.local scripts/backfill-issue-sidebars.ts",
     "issues:neutralize-copy": "tsx --env-file=.env.local scripts/neutralize-issue-copy.ts",
     "government:sync": "tsx --env-file=.env.local scripts/sync-congress.ts",
+    "state-bills:sync": "tsx --env-file=.env.local scripts/sync-state-bills.ts",
+    "federal-bills:sync": "tsx --env-file=.env.local scripts/sync-federal-bills.ts",
     "db:generate": "node --env-file=.env.local node_modules/drizzle-kit/bin.cjs generate",
     "db:migrate": "tsx --env-file=.env.local scripts/migrate.ts",
     "start": "next start",
