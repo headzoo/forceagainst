@@ -75,7 +75,7 @@ export function ActionsDirectory({ issues, actions }: { issues: Issue[]; actions
           <h1 className={s.heroCta}>
             <Image className={s.heroCtaImage} src={ctaImage} alt="Turn concern into force." priority sizes="(max-width: 780px) calc(100vw - 40px), 48vw" />
           </h1>
-          <p className={s.dek}>A focused directory of verified petitions, lawsuits, and campaigns fighting for the issue you choose.</p>
+          <p className={s.dek}>A focused directory of petitions, lawsuits, and campaigns fighting for the issue you choose.</p>
         </div>
         <div className={s.issueCard}>
           <p className={s.issueCardPrompt} id="issue-picker-label">What are you fighting for?</p>

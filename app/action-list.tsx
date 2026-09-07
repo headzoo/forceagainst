@@ -6,6 +6,7 @@ import { ActionCardMeta } from '@/app/action-card-meta';
 import { LikeButton } from '@/app/action-like-button';
 import { cn, s } from '@/app/tailwind-styles';
 import { authClient } from '@/lib/auth-client';
+import { openSignInDialog } from '@/lib/auth-dialog';
 import type { DirectoryAction } from '@/lib/db';
 
 export type ActionListItem = Pick<
@@ -39,7 +40,7 @@ export function ActionList({
   paginate?: boolean;
   pageSize?: number;
 }) {
-  const { data: session } = authClient.useSession();
+  const { data: session, isPending: sessionPending } = authClient.useSession();
   const userId = session?.user.id;
   const [filter, setFilter] = useState<ActionFilter>('All');
   const [page, setPage] = useState(1);
@@ -80,7 +81,11 @@ export function ActionList({
   }, [linkMode, userId]);
 
   async function toggleLike(actionId: number) {
-    if (!session || updatingLikes.has(actionId)) return;
+    if (!session) {
+      openSignInDialog();
+      return;
+    }
+    if (updatingLikes.has(actionId)) return;
 
     const wasLiked = likedActionIds.has(actionId);
     setLikeError('');
@@ -150,11 +155,11 @@ export function ActionList({
             <article className={s.actionCard} key={action.id}>
               <div className={s.cardMain}>
                 <div className={s.actionTitleRow}>
-                  {session && linkMode === 'public' && (
+                  {linkMode === 'public' && (
                     <LikeButton
                       actionTitle={action.title}
                       liked={likedActionIds.has(action.id)}
-                      disabled={updatingLikes.has(action.id)}
+                      disabled={sessionPending || updatingLikes.has(action.id)}
                       onClick={() => toggleLike(action.id)}
                     />
                   )}

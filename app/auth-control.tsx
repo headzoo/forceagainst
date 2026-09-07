@@ -4,6 +4,7 @@ import { cn, s } from '@/app/tailwind-styles';
 import { type FormEvent, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { authClient } from '@/lib/auth-client';
+import { OPEN_SIGN_IN_DIALOG_EVENT } from '@/lib/auth-dialog';
 import { normalizeUsername, USERNAME_MAX_LENGTH, USERNAME_MIN_LENGTH, usernameError } from '@/lib/username';
 import { TurnstileWidget } from '@/app/turnstile-widget';
 
@@ -12,7 +13,7 @@ const developmentTurnstileSiteKey = '1x00000000000000000000AA';
 const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
   ?? (process.env.NODE_ENV === 'development' ? developmentTurnstileSiteKey : '');
 
-export function AuthControl() {
+export function AuthControl({ listenForSignInRequests = false }: { listenForSignInRequests?: boolean }) {
   const { data: session, isPending: sessionPending } = authClient.useSession();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<AuthMode>('sign-in');
@@ -75,6 +76,14 @@ export function AuthControl() {
     setCaptchaAttempt((current) => current + 1);
     setOpen(true);
   }
+
+  useEffect(() => {
+    if (!listenForSignInRequests) return;
+
+    const openSignIn = () => showAuth('sign-in');
+    window.addEventListener(OPEN_SIGN_IN_DIALOG_EVENT, openSignIn);
+    return () => window.removeEventListener(OPEN_SIGN_IN_DIALOG_EVENT, openSignIn);
+  }, [listenForSignInRequests]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
