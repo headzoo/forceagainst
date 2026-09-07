@@ -1,14 +1,13 @@
 import type { Metadata } from 'next';
-import siteLogo from '@/assets/logo-2.png';
 
 export const SITE_NAME = 'Force Against';
 export const SITE_URL = 'https://forceagainst.com';
 
 const SITE_OPEN_GRAPH_IMAGE = {
-  url: siteLogo.src,
-  width: siteLogo.width,
-  height: siteLogo.height,
-  alt: SITE_NAME,
+  url: '/og-homepage.png',
+  width: 1200,
+  height: 630,
+  alt: 'Turn concern into force.',
 };
 
 type SiteMetadataOptions = {
