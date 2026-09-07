@@ -108,6 +108,7 @@ export default async function GovernmentWritePage({ searchParams }: WritePagePro
           displayTitle: member.displayTitle,
           chamber: member.chamber,
           recipientAddress,
+          mailingAddress: member.mailingAddress ?? recipientAddress,
           contactFormUrl: member.contactFormUrl,
           officialWebsite: member.officialWebsite,
           defaultConstituency: constituencyLabel(member.chamber, member.state, member.district),

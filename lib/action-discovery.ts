@@ -9,7 +9,27 @@ const DEFAULT_MODEL = 'gpt-5.4-mini';
 const DEFAULT_LIMIT = 3;
 const MAX_LIMIT = 10;
 const MAX_CANDIDATE_LIMIT = 20;
+const DEFAULT_SEARCH_TIMEOUT_MS = 90_000;
+const TARGETED_SEARCH_TIMEOUT_MS = 180_000;
 const ACTION_TYPES = ['Petition', 'Lawsuit', 'Campaign'] as const;
+
+const LGBTQ_RIGHT_OF_CENTER_SEARCH_LANES = [
+  'religious-liberty and conscience challenges to sexual-orientation or gender-identity rules',
+  'parental-rights actions involving school curriculum, pronouns, notification, or opt-outs',
+  'actions defending sex-based categories in sports, shelters, prisons, or other facilities',
+  'campaigns or cases opposing gender-transition policies for minors or related medical mandates',
+] as const;
+
+const RIGHT_OF_CENTER_SEARCH_LANES_BY_ISSUE: Record<string, readonly string[]> = {
+  lgbtq: LGBTQ_RIGHT_OF_CENTER_SEARCH_LANES,
+  'lgbtq-rights': LGBTQ_RIGHT_OF_CENTER_SEARCH_LANES,
+  'gun-violence': [
+    'Second Amendment challenges to firearm, magazine, or ammunition restrictions',
+    'gun-rights actions involving carry permits, constitutional carry, or lawful self-defense',
+    'campaigns opposing red-flag, background-check, registration, waiting-period, or storage proposals',
+    'cases or campaigns defending firearm-industry liability protections or lawful commerce',
+  ],
+};
 
 type ActionType = (typeof ACTION_TYPES)[number];
 
@@ -168,6 +188,18 @@ function responseText(payload: ResponsesPayload) {
   return '';
 }
 
+export function rightOfCenterSearchGuidance(issueSlug: string) {
+  const lanes = RIGHT_OF_CENTER_SEARCH_LANES_BY_ISSUE[issueSlug];
+  if (!lanes) return '';
+
+  return [
+    'Issue-specific viewpoint coverage: General search results for this topic often overrepresent left-of-center advocacy. Spend at least half of the available web searches on current right-of-center, conservative, or libertarian actions, using the sponsoring groups\' own terminology rather than relying only on partisan labels.',
+    'Search each of these lanes separately:',
+    ...lanes.map((lane) => `- ${lane}`),
+    'When reliable live actions exist in these lanes, include them in the candidate set and order the strongest qualifying examples before candidates from perspectives that are already easy to find. Apply the same direct-page, currency, and source-quality standards to every viewpoint. Perspective labels in the results must describe the concrete policy outcome sought, not call an action right-wing, conservative, left-wing, or progressive.',
+  ].join('\n');
+}
+
 function validateCandidate(value: unknown): DiscoveredAction | null {
   if (!value || typeof value !== 'object') return null;
   const candidate = value as Record<string, unknown>;
@@ -254,7 +286,11 @@ async function searchIssue(
 ) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error('OPENAI_API_KEY is not configured.');
-  const candidateLimit = Math.min(MAX_CANDIDATE_LIMIT, Math.max(limit * 3, limit + 4));
+  const targetedSearchGuidance = rightOfCenterSearchGuidance(issue.slug);
+  const candidateLimit = Math.min(
+    MAX_CANDIDATE_LIMIT,
+    targetedSearchGuidance ? Math.max(limit * 4, limit + 8) : Math.max(limit * 3, limit + 4),
+  );
 
   const input = [
     `Today is ${new Date().toISOString().slice(0, 10)}. Research up to ${candidateLimit} current, concrete candidates for the issue below. The application will select at most ${limit} final candidates from your results.`,
@@ -265,6 +301,8 @@ async function searchIssue(
     '',
     'Before choosing candidates, run targeted searches for actions seeking meaningfully different outcomes—for example expansion and restriction, adoption and repeal, or a proposed change and defense of current policy—when those distinctions apply to the issue.',
     '',
+    targetedSearchGuidance,
+    targetedSearchGuidance ? '' : null,
     'Build a candidate set that spans distinct organizations and substantive perspectives when reliable live actions exist. Do not impose an artificial quota, lower source standards, invent an opposing position, or return weak results merely to create balance. Do not assume that advocacy from the existing database represents the range of eligible viewpoints.',
     '',
     'Only return live actions that a visitor can take or follow now. The href must be the exact candidate’s direct action or case page, not an organization-wide action directory, filtered case index, search result, news recap, social post, homepage, expired action, generic donation page, or event listing. Do not invent facts. Return no action when reliable sources do not support one.',
@@ -278,7 +316,7 @@ async function searchIssue(
     'For each candidate, provide a short perspective label that factually describes the outcome sought, such as expand ballot access, tighten eligibility rules, preserve current law, or repeal a restriction. Reuse the same label for candidates seeking substantially the same outcome.',
     '',
     'Write concise, neutral, attributed directory copy. The detail is a one-sentence summary of what the named organization is asking people to do. The description is 2-4 short Markdown paragraphs explaining the organization’s stated position, the action or case, and what the visitor can do. Accurately represent the sponsoring organization without adopting its position as the directory’s voice. Do not include source citations or links in the detail or description; the href field supplies the source. The effort is a short label such as 2 min, 5 min, Volunteer, Join campaign, or Follow case.',
-  ].join('\n');
+  ].filter((line): line is string => line !== null).join('\n');
 
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
@@ -292,7 +330,7 @@ async function searchIssue(
       input,
       tools: [{ type: 'web_search_preview', search_context_size: 'medium' }],
       tool_choice: 'auto',
-      max_tool_calls: 10,
+      max_tool_calls: targetedSearchGuidance ? 14 : 10,
       max_output_tokens: 12_000,
       reasoning: { effort: 'low' },
       store: false,
@@ -305,7 +343,7 @@ async function searchIssue(
         },
       },
     }),
-    signal: AbortSignal.timeout(90_000),
+    signal: AbortSignal.timeout(targetedSearchGuidance ? TARGETED_SEARCH_TIMEOUT_MS : DEFAULT_SEARCH_TIMEOUT_MS),
   });
 
   const payload = await response.json().catch(() => null) as ResponsesPayload | null;

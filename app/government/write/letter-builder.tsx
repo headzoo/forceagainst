@@ -40,6 +40,7 @@ type LetterMember = {
   displayTitle: string;
   chamber: 'house' | 'senate';
   recipientAddress: string;
+  mailingAddress: string;
   contactFormUrl: string | null;
   officialWebsite: string | null;
   defaultConstituency: string;
@@ -148,6 +149,12 @@ function buildLetterText(member: LetterMember, dateLabel: string, fields: Letter
     fields.cityStateZip,
     fields.contact,
   ].join('\n');
+}
+
+function formatMailingAddress(address: string) {
+  return address
+    .trim()
+    .replace(/\s+(Washington)\s+(DC)\s+(\d{5}(?:-\d{4})?)$/i, '\n$1, $2 $3');
 }
 
 function pdfSafeText(value: string) {
@@ -471,6 +478,7 @@ export function LetterBuilder({ member, dateLabel, actionContext }: LetterBuilde
   const subject = buildSubject(fields);
   const letterText = buildLetterText(member, dateLabel, fields);
   const contactUrl = member.contactFormUrl ?? member.officialWebsite;
+  const mailingAddress = formatMailingAddress(member.mailingAddress);
 
   async function copyLetter() {
     const value = `Subject: ${subject}\n\n${letterText}`;
@@ -649,11 +657,15 @@ export function LetterBuilder({ member, dateLabel, actionContext }: LetterBuilde
             : 'Outlined fields are editable. Complete each one before exporting the letter.'}
         </p>
 
-        <div className={s.letterActionButtons}>
+        <div className={s.letterPdfPath}>
           <button className={s.letterActionPrimary} type="button" disabled={!complete || generatingPdf} onClick={() => void downloadPdf()}>
             <span>{generatingPdf ? 'Building PDF…' : 'Download PDF'}</span>
             <span aria-hidden="true">↓</span>
           </button>
+          <address>{mailingAddress}</address>
+        </div>
+
+        <div className={s.letterActionButtons}>
           <button type="button" disabled={!complete} onClick={() => void copyLetter()}>
             <span>Copy Letter</span>
             <span aria-hidden="true">⧉</span>

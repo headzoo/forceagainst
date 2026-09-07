@@ -65,9 +65,10 @@ Set `OPENAI_API_KEY` in `.env.local`, then run:
 
 ```bash
 pnpm run actions:discover
+pnpm run actions:discover lgbtq
 ```
 
-Useful local options are `--dry-run`, `--issue=<slug>`, and `--max=<count>`. A dry run searches and reports candidates without changing the database.
+Pass an issue slug positionally to search only that issue. Useful local options are `--dry-run`, `--issue=<slug>` (an alternative to the positional slug), and `--max=<count>`. A dry run searches and reports candidates without changing the database.
 
 Production uses the secured `/api/cron/discover-actions` route and the weekly schedule in `vercel.json`. Add `OPENAI_API_KEY` and a random `CRON_SECRET` of at least 16 characters to the Vercel project. `ACTION_DISCOVERY_MODEL` and `ACTION_DISCOVERY_LIMIT` are optional overrides.
 
