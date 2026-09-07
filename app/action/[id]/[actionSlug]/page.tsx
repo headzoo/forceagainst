@@ -7,6 +7,7 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ActionComments } from '@/app/action-comments';
 import { ActionLikeButton } from '@/app/action-like-button';
+import { ActionGovernmentWriter } from '@/app/government/action-government-writer';
 import { OpenGraphPreview } from '@/app/open-graph-preview';
 import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
@@ -139,6 +140,7 @@ export default async function ActionPage({ params }: ActionPageProps) {
             <li><small>Type</small><div>{action.type}</div><p>{typeDescriptions[action.type]}</p></li>
             <li><small>Created</small><div>{createdDate}</div></li>
           </ul>
+          <ActionGovernmentWriter actionTitle={action.title} />
         </div>
         <article className={s.descriptionContent}>
           <p className={s.eyebrow}><span /> THE ACTION</p>

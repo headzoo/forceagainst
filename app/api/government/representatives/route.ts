@@ -6,6 +6,7 @@ import {
   senateAppliesToState,
 } from '@/lib/civic-district';
 import { getCongressMembersByJurisdiction } from '@/lib/db';
+import { STATE_NAMES } from '@/lib/us-states';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -17,6 +18,37 @@ function response(body: unknown, init?: ResponseInit) {
     ...init,
     headers: { ...NO_STORE_HEADERS, ...init?.headers },
   });
+}
+
+async function representativesForJurisdiction(jurisdiction: { state: string; district: number }) {
+  const roster = await getCongressMembersByJurisdiction(jurisdiction.state, jurisdiction.district);
+  const senateApplies = senateAppliesToState(jurisdiction.state);
+
+  return {
+    jurisdiction,
+    districtLabel: districtLabel(jurisdiction),
+    representative: roster.representative,
+    senators: senateApplies ? roster.senators : [],
+    senateApplies,
+    houseVacant: roster.representative === null,
+  };
+}
+
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const state = url.searchParams.get('state')?.toUpperCase() ?? '';
+  const rawDistrict = url.searchParams.get('district') ?? '';
+  const district = /^\d{1,2}$/.test(rawDistrict) ? Number(rawDistrict) : Number.NaN;
+
+  if (!(state in STATE_NAMES) || !Number.isSafeInteger(district) || district < 0 || district > 99) {
+    return response({ error: 'Provide a valid congressional jurisdiction.' }, { status: 400 });
+  }
+
+  try {
+    return response(await representativesForJurisdiction({ state, district }));
+  } catch {
+    return response({ error: 'Representative lookup is temporarily unavailable.' }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
@@ -31,17 +63,7 @@ export async function POST(request: Request) {
 
   try {
     const jurisdiction = await getCivicDistrict(address);
-    const roster = await getCongressMembersByJurisdiction(jurisdiction.state, jurisdiction.district);
-    const senateApplies = senateAppliesToState(jurisdiction.state);
-
-    return response({
-      jurisdiction,
-      districtLabel: districtLabel(jurisdiction),
-      representative: roster.representative,
-      senators: senateApplies ? roster.senators : [],
-      senateApplies,
-      houseVacant: roster.representative === null,
-    });
+    return response(await representativesForJurisdiction(jurisdiction));
   } catch (error) {
     if (error instanceof CivicDistrictError) {
       return response(

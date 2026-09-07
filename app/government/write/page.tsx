@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
 import { s } from '@/app/tailwind-styles';
+import { ActionGovernmentWriter } from '@/app/government/action-government-writer';
 import { getCurrentCongressMemberByBioguideId } from '@/lib/db';
 import { createSiteMetadata } from '@/lib/site-metadata';
 import { stateHeading } from '@/lib/us-states';
@@ -13,7 +14,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = createSiteMetadata({
   title: 'Write Your Representative | Force Against Something',
-  description: 'Build, email, and download a letter to your representative.',
+  description: 'Build, copy, and download a letter to your representative.',
   path: '/government/write',
 });
 
@@ -31,7 +32,31 @@ function constituencyLabel(chamber: 'house' | 'senate', state: string, district:
 export default async function GovernmentWritePage({ searchParams }: WritePageProps) {
   const params = await searchParams;
   const rep = Array.isArray(params.rep) ? params.rep[0] : params.rep;
-  if (!rep || !/^[A-Z]\d{6}$/i.test(rep)) notFound();
+
+  if (!rep) {
+    return (
+      <main className={s.governmentWritePage}>
+        <SiteHeader />
+
+        <section className={s.governmentWriteHero}>
+          <Link className={s.backLink} href="/government">&larr; Back to your government</Link>
+          <p className={s.eyebrow}><span /> LETTER BUILDER</p>
+          <h1>Choose who<br />to write.</h1>
+          <p>
+            Select one of your saved representatives, or enter your address to find the federal officials who represent you.
+          </p>
+        </section>
+
+        <section className={s.governmentWritePicker} aria-label="Choose a representative">
+          <ActionGovernmentWriter openOnMount triggerLabel="Choose a representative" />
+        </section>
+
+        <SiteFooter />
+      </main>
+    );
+  }
+
+  if (!/^[A-Z]\d{6}$/i.test(rep)) notFound();
 
   const member = await getCurrentCongressMemberByBioguideId(rep.toUpperCase());
   if (!member) notFound();

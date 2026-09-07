@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import '@fontsource/caveat/700.css';
 import { config } from '@fortawesome/fontawesome-svg-core';
 import '@fortawesome/fontawesome-svg-core/styles.css';
 import { Analytics } from '@vercel/analytics/next';
