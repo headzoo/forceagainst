@@ -176,6 +176,13 @@
       "when": 1788722653959,
       "tag": "0024_add_organization_avatar",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1788789382455,
+      "tag": "0025_pale_mathemanic",
+      "breakpoints": true
     }
   ]
 }

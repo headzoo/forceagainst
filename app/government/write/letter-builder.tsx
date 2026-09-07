@@ -7,6 +7,7 @@ import {
   saveStoredGovernmentSignature,
   type GovernmentSignature,
 } from '@/lib/government-signature-storage';
+import type { GovernmentActionContext } from '@/lib/government-action-context';
 import {
   useCallback,
   useEffect,
@@ -47,6 +48,7 @@ type LetterMember = {
 type LetterBuilderProps = {
   member: LetterMember;
   dateLabel: string;
+  actionContext?: GovernmentActionContext;
 };
 
 type EditableFieldProps = {
@@ -104,14 +106,14 @@ function safeFields(
   return result;
 }
 
-function blankFields(member: LetterMember): LetterFields {
+function blankFields(member: LetterMember, actionContext?: GovernmentActionContext): LetterFields {
   return {
-    subject: '',
+    subject: actionContext?.subject ?? '',
     fullName: '',
     constituency: member.defaultConstituency,
     reason: '',
-    details: '',
-    request: '',
+    details: actionContext?.background ?? '',
+    request: actionContext?.request ?? '',
     streetAddress: '',
     cityStateZip: '',
     contact: '',
@@ -316,8 +318,11 @@ function SignatureField({ signature, onOpen }: SignatureFieldProps) {
   );
 }
 
-export function LetterBuilder({ member, dateLabel }: LetterBuilderProps) {
-  const [fields, setFields] = useState<LetterFields>(() => blankFields(member));
+export function LetterBuilder({ member, dateLabel, actionContext }: LetterBuilderProps) {
+  const draftKey = actionContext
+    ? `${member.bioguideId}:action:${actionContext.id}`
+    : `${member.bioguideId}:general`;
+  const [fields, setFields] = useState<LetterFields>(() => blankFields(member, actionContext));
   const [signature, setSignature] = useState<GovernmentSignature | null>(null);
   const [signatureRemembered, setSignatureRemembered] = useState(false);
   const [signatureStorageAvailable, setSignatureStorageAvailable] = useState(true);
@@ -337,7 +342,8 @@ export function LetterBuilder({ member, dateLabel }: LetterBuilderProps) {
           if (isRecord(stored)) {
             const profile = safeFields(stored.profile, PROFILE_KEYS);
             const drafts = isRecord(stored.drafts) ? stored.drafts : {};
-            const draft = safeFields(drafts[member.bioguideId], DRAFT_KEYS);
+            const savedDraft = drafts[draftKey] ?? (actionContext ? undefined : drafts[member.bioguideId]);
+            const draft = safeFields(savedDraft, DRAFT_KEYS);
             setFields((current) => ({ ...current, ...profile, ...draft }));
             setSaveStatus('Draft restored from this device.');
           }
@@ -357,7 +363,7 @@ export function LetterBuilder({ member, dateLabel }: LetterBuilderProps) {
     });
 
     return () => window.cancelAnimationFrame(animationFrame);
-  }, [member.bioguideId]);
+  }, [actionContext, draftKey, member.bioguideId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -386,11 +392,11 @@ export function LetterBuilder({ member, dateLabel }: LetterBuilderProps) {
         const existingDrafts = isRecord(parsed) && isRecord(parsed.drafts) ? parsed.drafts : {};
         const drafts = Object.fromEntries(
           Object.entries(existingDrafts)
-            .filter(([key, value]) => /^[A-Z]\d{6}$/i.test(key) && isRecord(value))
-            .slice(-24),
+            .filter(([key, value]) => /^[A-Z]\d{6}(?::(?:general|action:\d+))?$/i.test(key) && isRecord(value))
+            .slice(-23),
         );
 
-        drafts[member.bioguideId] = Object.fromEntries(DRAFT_KEYS.map((key) => [key, fields[key]]));
+        drafts[draftKey] = Object.fromEntries(DRAFT_KEYS.map((key) => [key, fields[key]]));
         const profile = Object.fromEntries(PROFILE_KEYS.map((key) => [key, fields[key]]));
         window.localStorage.setItem(LETTER_STORAGE_KEY, JSON.stringify({ profile, drafts }));
         setSaveStatus('Saved on this device.');
@@ -400,7 +406,7 @@ export function LetterBuilder({ member, dateLabel }: LetterBuilderProps) {
     }, 250);
 
     return () => window.clearTimeout(timer);
-  }, [fields, member.bioguideId, restored]);
+  }, [draftKey, fields, restored]);
 
   function updateField<K extends keyof LetterFields>(key: K, value: LetterFields[K]) {
     setFields((current) => ({ ...current, [key]: value }));
@@ -452,7 +458,7 @@ export function LetterBuilder({ member, dateLabel }: LetterBuilderProps) {
     } catch {
       storageCleared = false;
     }
-    setFields(blankFields(member));
+    setFields(blankFields(member, actionContext));
     setSignature(null);
     setSignatureRemembered(false);
     setActionStatus(storageCleared ? 'Saved letter information cleared.' : 'This letter was cleared, but some saved browser data could not be removed.');

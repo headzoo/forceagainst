@@ -6,6 +6,11 @@ import { type FormEvent, useEffect, useState } from 'react';
 import { AuthControl } from '@/app/auth-control';
 import { SiteHeader } from '@/app/site-header';
 import { authClient } from '@/lib/auth-client';
+import {
+  GOVERNMENT_BACKGROUND_MAX_LENGTH,
+  GOVERNMENT_REQUEST_MAX_LENGTH,
+  GOVERNMENT_SUBJECT_MAX_LENGTH,
+} from '@/lib/government-action-context';
 
 type IssueOption = { id: number; name: string; slug: string };
 type Organization = { id: number; name: string; website: string | null };
@@ -42,6 +47,9 @@ export function SubmissionFlow({ issues }: { issues: IssueOption[] }) {
   const [title, setTitle] = useState('');
   const [detail, setDetail] = useState('');
   const [description, setDescription] = useState('');
+  const [governmentSubject, setGovernmentSubject] = useState('');
+  const [governmentBackground, setGovernmentBackground] = useState('');
+  const [governmentRequest, setGovernmentRequest] = useState('');
   const [working, setWorking] = useState(false);
   const [error, setError] = useState('');
   const [submittedTitle, setSubmittedTitle] = useState('');
@@ -103,6 +111,9 @@ export function SubmissionFlow({ issues }: { issues: IssueOption[] }) {
         title,
         detail,
         description,
+        governmentSubject,
+        governmentBackground,
+        governmentRequest,
       }),
     });
     const data = await responseJson(response);
@@ -179,6 +190,11 @@ export function SubmissionFlow({ issues }: { issues: IssueOption[] }) {
               <label>Generated slug<input value={slugifyPreview(title)} readOnly aria-describedby="slug-note" /><small id="slug-note">May receive a numeric suffix if already taken.</small></label>
               <label>Summary<textarea name="detail" value={detail} onChange={(event) => setDetail(event.target.value)} minLength={20} maxLength={600} rows={4} required /><small>Shown on the homepage action card.</small></label>
               <label>Full description (Markdown)<textarea name="description" value={description} onChange={(event) => setDescription(event.target.value)} minLength={20} maxLength={1000000} rows={14} required /><small>Shown on the action detail page. Markdown headings, lists, links, and tables are supported.</small></label>
+              <p className={cn(s.step, s.submissionStep)}>OPTIONAL / GOVERNMENT LETTER</p>
+              <p className={s.formIntro}>Help visitors start a relevant letter. Any field left blank will fall back to the action title, summary, and URL.</p>
+              <label>Suggested subject<input name="governmentSubject" type="text" value={governmentSubject} onChange={(event) => setGovernmentSubject(event.target.value)} maxLength={GOVERNMENT_SUBJECT_MAX_LENGTH} placeholder={title || 'What the letter is about'} /><small>Used for the letter’s subject line.</small></label>
+              <label>Background for the representative<textarea name="governmentBackground" value={governmentBackground} onChange={(event) => setGovernmentBackground(event.target.value)} maxLength={GOVERNMENT_BACKGROUND_MAX_LENGTH} rows={6} placeholder={detail || 'A concise explanation of the issue'} /><small>Visitors can review and edit this before copying or downloading their letter.</small></label>
+              <label>Suggested request<textarea name="governmentRequest" value={governmentRequest} onChange={(event) => setGovernmentRequest(event.target.value)} maxLength={GOVERNMENT_REQUEST_MAX_LENGTH} rows={4} placeholder="The specific action the representative should take" /></label>
               <label>Effort<input value={preview.effort} readOnly /><small>Determined from the linked page and rechecked on submission.</small></label>
               {error && <p className={s.formError} role="alert">{error}</p>}
               <button className={s.formSubmit} type="submit" disabled={working || issues.length === 0}>{working ? 'VERIFYING…' : 'SUBMIT FOR APPROVAL'} <span>→</span></button>
@@ -190,7 +206,7 @@ export function SubmissionFlow({ issues }: { issues: IssueOption[] }) {
               <p className={cn(s.step, s.submissionStep)}>SUBMISSION RECEIVED</p>
               <h2>Now under review.</h2>
               <p className={s.submissionStatusCopy}><strong>{submittedTitle}</strong> was sent to an admin. It will stay out of the public directory until it is manually approved.</p>
-              <div className={s.successActions}><Link className={cn(s.formSubmit, s.successFormSubmit)} href="/">RETURN TO DIRECTORY <span>→</span></Link><button type="button" onClick={() => { setSubmittedTitle(''); setPreview(null); setHref(''); setTitle(''); setDetail(''); setDescription(''); }}>Submit another</button></div>
+              <div className={s.successActions}><Link className={cn(s.formSubmit, s.successFormSubmit)} href="/">RETURN TO DIRECTORY <span>→</span></Link><button type="button" onClick={() => { setSubmittedTitle(''); setPreview(null); setHref(''); setTitle(''); setDetail(''); setDescription(''); setGovernmentSubject(''); setGovernmentBackground(''); setGovernmentRequest(''); }}>Submit another</button></div>
             </div>
           )}
         </div>

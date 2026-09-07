@@ -13,6 +13,7 @@ import { stateHeading } from '@/lib/us-states';
 import { RepresentativeAddressForm } from './representative-address-form';
 
 type ActionGovernmentWriterProps = {
+  actionId?: number;
   actionTitle?: string;
   openOnMount?: boolean;
   triggerLabel?: string;
@@ -24,6 +25,7 @@ function memberJurisdiction(member: RepresentativesResult['senators'][number], r
 }
 
 export function ActionGovernmentWriter({
+  actionId,
   actionTitle,
   openOnMount = false,
   triggerLabel = 'Write your government',
@@ -127,6 +129,12 @@ export function ActionGovernmentWriter({
     ? [result.representative, ...result.senators].filter((member): member is NonNullable<typeof member> => member !== null)
     : [];
 
+  function writeHref(bioguideId: string) {
+    const params = new URLSearchParams({ rep: bioguideId });
+    if (actionId) params.set('action', String(actionId));
+    return `/government/write?${params.toString()}`;
+  }
+
   return (
     <>
       <button ref={triggerRef} className={s.actionGovernmentButton} type="button" onClick={openDialog}>
@@ -175,7 +183,7 @@ export function ActionGovernmentWriter({
                 {recipients.length > 0 ? (
                   <div className={s.actionGovernmentRecipients}>
                     {recipients.map((member) => (
-                      <Link key={member.bioguideId} href={`/government/write?rep=${encodeURIComponent(member.bioguideId)}`}>
+                      <Link key={member.bioguideId} href={writeHref(member.bioguideId)}>
                         <span>
                           <small>{member.displayTitle}</small>
                           <strong>{member.officialFullName}</strong>

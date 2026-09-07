@@ -10,6 +10,9 @@ type Submission = {
   title: string;
   detail: string;
   description: string;
+  governmentSubject: string | null;
+  governmentBackground: string | null;
+  governmentRequest: string | null;
   effort: string;
   href: string;
   organization: string;
@@ -64,6 +67,16 @@ export function AdminReview() {
               <h2>{submission.title}</h2>
               <p>{submission.detail}</p>
               <details className={s.reviewDescription}><summary>Review full Markdown description</summary><pre>{submission.description}</pre></details>
+              {(submission.governmentSubject || submission.governmentBackground || submission.governmentRequest) && (
+                <details className={s.reviewDescription}>
+                  <summary>Review government-letter context</summary>
+                  <pre>{[
+                    submission.governmentSubject && `Subject: ${submission.governmentSubject}`,
+                    submission.governmentBackground && `Background:\n${submission.governmentBackground}`,
+                    submission.governmentRequest && `Request:\n${submission.governmentRequest}`,
+                  ].filter(Boolean).join('\n\n')}</pre>
+                </details>
+              )}
               <dl><div><dt>Organization</dt><dd>{submission.organization}</dd></div><div><dt>Submitted by</dt><dd>{submission.submitterName ?? 'Unknown'}{submission.submitterEmail ? ` · ${submission.submitterEmail}` : ''}</dd></div></dl>
               <div className={s.reviewActions}><a href={submission.href} target="_blank" rel="noreferrer">Inspect source ↗</a><button type="button" onClick={() => approve(submission.id)} disabled={approving === submission.id}>{approving === submission.id ? 'APPROVING…' : 'APPROVE & PUBLISH'}</button></div>
             </article>

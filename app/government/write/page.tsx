@@ -5,7 +5,8 @@ import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
 import { s } from '@/app/tailwind-styles';
 import { ActionGovernmentWriter } from '@/app/government/action-government-writer';
-import { getCurrentCongressMemberByBioguideId } from '@/lib/db';
+import { getCurrentCongressMemberByBioguideId, getPublishedAction } from '@/lib/db';
+import { buildGovernmentActionContext } from '@/lib/government-action-context';
 import { createSiteMetadata } from '@/lib/site-metadata';
 import { stateHeading } from '@/lib/us-states';
 import { LetterBuilder } from './letter-builder';
@@ -19,8 +20,14 @@ export const metadata: Metadata = createSiteMetadata({
 });
 
 type WritePageProps = {
-  searchParams: Promise<{ rep?: string | string[] }>;
+  searchParams: Promise<{ rep?: string | string[]; action?: string | string[] }>;
 };
+
+function positiveInteger(value: string | undefined) {
+  if (!value || !/^\d+$/.test(value)) return null;
+  const number = Number(value);
+  return Number.isSafeInteger(number) && number > 0 ? number : null;
+}
 
 function constituencyLabel(chamber: 'house' | 'senate', state: string, district: number | null) {
   if (chamber === 'senate') return stateHeading(state);
@@ -32,6 +39,12 @@ function constituencyLabel(chamber: 'house' | 'senate', state: string, district:
 export default async function GovernmentWritePage({ searchParams }: WritePageProps) {
   const params = await searchParams;
   const rep = Array.isArray(params.rep) ? params.rep[0] : params.rep;
+  const actionValue = Array.isArray(params.action) ? params.action[0] : params.action;
+  const actionId = positiveInteger(actionValue);
+  const action = actionId ? await getPublishedAction(actionId) : undefined;
+  const actionContext = action ? buildGovernmentActionContext(action) : undefined;
+  const backHref = action ? `/a/${action.issueSlug}/${action.slug}` : '/government';
+  const backLabel = action ? 'Back to the action' : 'Back to your government';
 
   if (!rep) {
     return (
@@ -39,7 +52,7 @@ export default async function GovernmentWritePage({ searchParams }: WritePagePro
         <SiteHeader />
 
         <section className={s.governmentWriteHero}>
-          <Link className={s.backLink} href="/government">&larr; Back to your government</Link>
+          <Link className={s.backLink} href={backHref}>&larr; {backLabel}</Link>
           <p className={s.eyebrow}><span /> LETTER BUILDER</p>
           <h1>Choose who<br />to write.</h1>
           <p>
@@ -48,7 +61,7 @@ export default async function GovernmentWritePage({ searchParams }: WritePagePro
         </section>
 
         <section className={s.governmentWritePicker} aria-label="Choose a representative">
-          <ActionGovernmentWriter openOnMount triggerLabel="Choose a representative" />
+          <ActionGovernmentWriter actionId={actionContext?.id} actionTitle={actionContext?.title} openOnMount triggerLabel="Choose a representative" />
         </section>
 
         <SiteFooter />
@@ -76,15 +89,18 @@ export default async function GovernmentWritePage({ searchParams }: WritePagePro
       <SiteHeader />
 
       <section className={s.governmentWriteHero}>
-        <Link className={s.backLink} href="/government">&larr; Back to your government</Link>
+        <Link className={s.backLink} href={backHref}>&larr; {backLabel}</Link>
         <p className={s.eyebrow}><span /> LETTER BUILDER</p>
         <h1>Write to<br />{member.lastName}.</h1>
         <p>
-          Select any outlined field in the letter to add your words. Your draft is saved only in this browser.
+          {actionContext
+            ? <>We added a starting point from “{actionContext.title}.” Review every outlined field and make the letter your own. Your draft is saved only in this browser.</>
+            : 'Select any outlined field in the letter to add your words. Your draft is saved only in this browser.'}
         </p>
       </section>
 
       <LetterBuilder
+        key={`${member.bioguideId}:${actionContext?.id ?? 'general'}`}
         member={{
           bioguideId: member.bioguideId,
           officialFullName: member.officialFullName,
@@ -97,6 +113,7 @@ export default async function GovernmentWritePage({ searchParams }: WritePagePro
           defaultConstituency: constituencyLabel(member.chamber, member.state, member.district),
         }}
         dateLabel={dateLabel}
+        actionContext={actionContext}
       />
 
       <SiteFooter />

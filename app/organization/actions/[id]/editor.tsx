@@ -6,6 +6,11 @@ import { type FormEvent, useEffect, useState } from 'react';
 import { AuthControl } from '@/app/auth-control';
 import { SiteHeader } from '@/app/site-header';
 import { authClient } from '@/lib/auth-client';
+import {
+  GOVERNMENT_BACKGROUND_MAX_LENGTH,
+  GOVERNMENT_REQUEST_MAX_LENGTH,
+  GOVERNMENT_SUBJECT_MAX_LENGTH,
+} from '@/lib/government-action-context';
 
 type IssueOption = { id: number; name: string; slug: string };
 type EditableAction = {
@@ -15,6 +20,9 @@ type EditableAction = {
   title: string;
   detail: string;
   description: string;
+  governmentSubject: string | null;
+  governmentBackground: string | null;
+  governmentRequest: string | null;
   href: string;
   effort: string;
   approved: boolean;
@@ -29,6 +37,9 @@ export function ActionEditor({ actionId, issues }: { actionId: number; issues: I
   const [title, setTitle] = useState('');
   const [detail, setDetail] = useState('');
   const [description, setDescription] = useState('');
+  const [governmentSubject, setGovernmentSubject] = useState('');
+  const [governmentBackground, setGovernmentBackground] = useState('');
+  const [governmentRequest, setGovernmentRequest] = useState('');
   const [href, setHref] = useState('');
   const [loadedActionKey, setLoadedActionKey] = useState('');
   const [saving, setSaving] = useState(false);
@@ -51,6 +62,9 @@ export function ActionEditor({ actionId, issues }: { actionId: number; issues: I
         setTitle(data.action.title);
         setDetail(data.action.detail);
         setDescription(data.action.description);
+        setGovernmentSubject(data.action.governmentSubject ?? '');
+        setGovernmentBackground(data.action.governmentBackground ?? '');
+        setGovernmentRequest(data.action.governmentRequest ?? '');
         setHref(data.action.href);
         setLoadedActionKey(actionKey);
       })
@@ -75,7 +89,7 @@ export function ActionEditor({ actionId, issues }: { actionId: number; issues: I
     const response = await fetch(`/api/actions/${actionId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ issueId, type, title, detail, description, href }),
+      body: JSON.stringify({ issueId, type, title, detail, description, governmentSubject, governmentBackground, governmentRequest, href }),
     });
     const data = await response.json().catch(() => ({})) as { error?: unknown; action?: Partial<EditableAction>; needsReapproval?: boolean };
     setSaving(false);
@@ -122,6 +136,11 @@ export function ActionEditor({ actionId, issues }: { actionId: number; issues: I
               <label>Title<input name="title" type="text" value={title} onChange={(event) => setTitle(event.target.value)} minLength={6} maxLength={180} required /></label>
               <label>Summary<textarea name="detail" value={detail} onChange={(event) => setDetail(event.target.value)} minLength={20} maxLength={600} rows={4} required /><small>Shown on the homepage action card.</small></label>
               <label>Full description (Markdown)<textarea name="description" value={description} onChange={(event) => setDescription(event.target.value)} minLength={20} maxLength={1_000_000} rows={14} required /><small>Shown on the action detail page. Markdown headings, lists, links, and tables are supported.</small></label>
+              <p className={cn(s.step, s.submissionStep)}>OPTIONAL / GOVERNMENT LETTER</p>
+              <p className={s.formIntro}>Help visitors start a relevant letter. Any field left blank will fall back to the action title, summary, and URL.</p>
+              <label>Suggested subject<input name="governmentSubject" type="text" value={governmentSubject} onChange={(event) => setGovernmentSubject(event.target.value)} maxLength={GOVERNMENT_SUBJECT_MAX_LENGTH} placeholder={title || 'What the letter is about'} /><small>Used for the letter’s subject line.</small></label>
+              <label>Background for the representative<textarea name="governmentBackground" value={governmentBackground} onChange={(event) => setGovernmentBackground(event.target.value)} maxLength={GOVERNMENT_BACKGROUND_MAX_LENGTH} rows={6} placeholder={detail || 'A concise explanation of the issue'} /><small>Visitors can review and edit this before copying or downloading their letter.</small></label>
+              <label>Suggested request<textarea name="governmentRequest" value={governmentRequest} onChange={(event) => setGovernmentRequest(event.target.value)} maxLength={GOVERNMENT_REQUEST_MAX_LENGTH} rows={4} placeholder="The specific action the representative should take" /></label>
               <label>Effort<input value={action.effort} readOnly /><small>Recalculated automatically if the action URL changes.</small></label>
               {error && <p className={s.formError} role="alert">{error}</p>}
               {status && <p className={s.formSuccess} role="status">{status}</p>}

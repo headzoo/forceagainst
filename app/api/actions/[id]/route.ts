@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import { actions, issues, orgs } from '@/db/schema';
 import { analyzeActionHref, parsePublicHttpUrl } from '@/lib/action-metadata';
 import { db } from '@/lib/db';
+import { parseGovernmentActionFields } from '@/lib/government-action-context';
 import { getMemberSession } from '@/lib/member';
 import { uniqueActionSlug } from '@/lib/slugs';
 
@@ -22,6 +23,9 @@ async function getOwnedAction(id: number, userId: string) {
       title: actions.title,
       detail: actions.detail,
       description: actions.description,
+      governmentSubject: actions.governmentSubject,
+      governmentBackground: actions.governmentBackground,
+      governmentRequest: actions.governmentRequest,
       href: actions.href,
       openGraph: actions.openGraph,
       effort: actions.effort,
@@ -68,12 +72,14 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   const detail = typeof body?.detail === 'string' ? body.detail.trim().replace(/\s+/g, ' ') : '';
   const description = typeof body?.description === 'string' ? body.description.trim() : '';
   const hrefInput = typeof body?.href === 'string' ? body.href.trim() : '';
+  const governmentFields = parseGovernmentActionFields(body);
 
   if (!Number.isSafeInteger(issueId) || issueId < 1) return Response.json({ error: 'Choose an issue.' }, { status: 400 });
   if (!actionTypes.includes(type as (typeof actionTypes)[number])) return Response.json({ error: 'Choose a valid action type.' }, { status: 400 });
   if (title.length < 6 || title.length > 180) return Response.json({ error: 'Title must be between 6 and 180 characters.' }, { status: 400 });
   if (detail.length < 20 || detail.length > 600) return Response.json({ error: 'Summary must be between 20 and 600 characters.' }, { status: 400 });
   if (description.length < 20 || description.length > 1_000_000) return Response.json({ error: 'Description must be between 20 and 1,000,000 characters.' }, { status: 400 });
+  if ('error' in governmentFields) return Response.json({ error: governmentFields.error }, { status: 400 });
 
   const [issue] = await db
     .select({ id: issues.id })
@@ -116,6 +122,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         title,
         detail,
         description,
+        ...governmentFields,
         href,
         effort,
         openGraph,

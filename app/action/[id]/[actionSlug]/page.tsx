@@ -140,7 +140,7 @@ export default async function ActionPage({ params }: ActionPageProps) {
             <li><small>Type</small><div>{action.type}</div><p>{typeDescriptions[action.type]}</p></li>
             <li><small>Created</small><div>{createdDate}</div></li>
           </ul>
-          <ActionGovernmentWriter actionTitle={action.title} />
+          <ActionGovernmentWriter actionId={action.id} actionTitle={action.title} />
         </div>
         <article className={s.descriptionContent}>
           <p className={s.eyebrow}><span /> THE ACTION</p>
