@@ -1,7 +1,7 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
 import { passkey } from '@better-auth/passkey';
 import { betterAuth, getCurrentAdapter, type BetterAuthPlugin } from 'better-auth';
-import { APIError } from 'better-auth/api';
+import { APIError, createAuthMiddleware } from 'better-auth/api';
 import { captcha } from 'better-auth/plugins';
 import { eq } from 'drizzle-orm';
 import * as schema from '@/db/schema';
@@ -20,6 +20,21 @@ const turnstileSecretKey = process.env.TURNSTILE_SECRET_KEY
 
 const passkeyRecoverySchema = {
   id: 'passkey-recovery-schema',
+  hooks: {
+    after: [{
+      matcher: (context) => context.path === '/passkey/generate-authenticate-options',
+      handler: createAuthMiddleware(async (ctx) => {
+        const returned = ctx.context.returned;
+        if (!returned || typeof returned !== 'object' || returned instanceof Response) return;
+
+        ctx.context.returned = {
+          ...returned,
+          // This expresses the user's no-PIN preference. Authenticators may still enforce a local unlock.
+          userVerification: 'discouraged',
+        };
+      }),
+    }],
+  },
   schema: {
     passkeyRecoveryCode: {
       fields: {

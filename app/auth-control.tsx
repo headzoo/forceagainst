@@ -7,7 +7,7 @@ import { authClient } from '@/lib/auth-client';
 import { normalizeUsername, USERNAME_MAX_LENGTH, USERNAME_MIN_LENGTH, usernameError } from '@/lib/username';
 import { TurnstileWidget } from '@/app/turnstile-widget';
 
-type AuthMode = 'sign-in' | 'sign-up';
+type AuthMode = 'sign-in' | 'sign-up' | 'recover-passkey';
 const developmentTurnstileSiteKey = '1x00000000000000000000AA';
 const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
   ?? (process.env.NODE_ENV === 'development' ? developmentTurnstileSiteKey : '');
@@ -22,6 +22,7 @@ export function AuthControl() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaAttempt, setCaptchaAttempt] = useState(0);
+  const [recoveryContext, setRecoveryContext] = useState<string | null>(null);
   const ready = useSyncExternalStore(() => () => undefined, () => true, () => false);
   const menuRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -69,6 +70,7 @@ export function AuthControl() {
   function showAuth(nextMode: AuthMode) {
     setMode(nextMode);
     setError('');
+    setRecoveryContext(null);
     setCaptchaToken(null);
     setCaptchaAttempt((current) => current + 1);
     setOpen(true);
@@ -84,6 +86,55 @@ export function AuthControl() {
     const password = String(form.get('password') ?? '');
     const name = String(form.get('name') ?? '').trim();
     const username = normalizeUsername(String(form.get('username') ?? ''));
+
+    if (mode === 'recover-passkey') {
+      if (!('PublicKeyCredential' in window)) {
+        setSubmitting(false);
+        setError('This browser does not support passkeys. Try a current version of Safari, Chrome, Edge, or Firefox.');
+        return;
+      }
+
+      try {
+        let context = recoveryContext;
+        if (!context) {
+          const response = await fetch('/api/passkey-recovery', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, code: String(form.get('recoveryCode') ?? '') }),
+          });
+          const data = await response.json().catch(() => ({})) as { context?: unknown; error?: unknown };
+          if (!response.ok || typeof data.context !== 'string') {
+            setError(String(data.error ?? 'We could not start passkey recovery.'));
+            return;
+          }
+          context = data.context;
+          setRecoveryContext(context);
+        }
+
+        const result = await authClient.passkey.addPasskey({
+          name: 'Recovered passkey',
+          context,
+          createSession: true,
+        });
+        if (result.error || !result.data) {
+          setError(`${result.error?.message ?? 'Passkey setup was canceled or could not be completed.'} Try setup again within 10 minutes; this attempt has already used the recovery code.`);
+          return;
+        }
+
+        try {
+          await downloadPasskeyRecoveryCodes();
+        } catch {
+          window.alert('Your passkey was reset, but new recovery codes could not be downloaded. Open Account settings to create a new set now.');
+        }
+        setRecoveryContext(null);
+        setOpen(false);
+      } catch (problem) {
+        setError(problem instanceof Error ? problem.message : 'Passkey recovery could not be completed.');
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
 
     if (mode === 'sign-up') {
       const validationError = usernameError(username);
@@ -121,6 +172,29 @@ export function AuthControl() {
     }
 
     setOpen(false);
+  }
+
+  async function signInWithPasskey() {
+    setSubmitting(true);
+    setError('');
+    if (!('PublicKeyCredential' in window)) {
+      setSubmitting(false);
+      setError('This browser does not support passkeys. Try a current version of Safari, Chrome, Edge, or Firefox.');
+      return;
+    }
+
+    try {
+      const result = await authClient.signIn.passkey();
+      if (result.error) {
+        setError(result.error.message ?? 'Passkey sign-in was canceled or could not be completed.');
+        return;
+      }
+      setOpen(false);
+    } catch (problem) {
+      setError(problem instanceof Error ? problem.message : 'Passkey sign-in was canceled or could not be completed.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (!ready || sessionPending) {
@@ -173,14 +247,32 @@ export function AuthControl() {
           <section className={s.authDialog} role="dialog" aria-modal="true" aria-labelledby={titleId}>
             <button className={s.authClose} type="button" onClick={() => setOpen(false)} aria-label="Close account dialog">×</button>
             <p className={cn(s.eyebrow, s.authDialogEyebrow)}><span /> YOUR ACCOUNT</p>
-            <h2 id={titleId}>{mode === 'sign-up' ? 'Join the force.' : 'Welcome back.'}</h2>
+            <h2 id={titleId}>
+              {mode === 'sign-up' ? 'Join the force.' : mode === 'recover-passkey' ? 'Reset passkey.' : 'Welcome back.'}
+            </h2>
             <p className={s.authIntro}>
               {mode === 'sign-up'
                 ? 'Create your account with an email and password.'
-                : 'Sign in to your Force Against Something account.'}
+                : mode === 'recover-passkey'
+                  ? 'Use one downloaded recovery code to replace every passkey on your account.'
+                  : 'Sign in to your Force Against Something account.'}
             </p>
             <form onSubmit={handleSubmit}>
-              {mode === 'sign-up' && (
+              {mode === 'recover-passkey' ? (
+                <>
+                  <label>
+                    Email
+                    <input name="email" type="email" autoComplete="email" required autoFocus disabled={Boolean(recoveryContext)} />
+                  </label>
+                  <label>
+                    Recovery code
+                    <input name="recoveryCode" type="text" autoComplete="off" spellCheck={false} required disabled={Boolean(recoveryContext)} />
+                    <small className={s.authFieldHint}>
+                      Starting recovery uses this code once. The replacement passkey must be created within 10 minutes.
+                    </small>
+                  </label>
+                </>
+              ) : mode === 'sign-up' && (
                 <>
                   <label>
                     Name
@@ -193,30 +285,71 @@ export function AuthControl() {
                   </label>
                 </>
               )}
-              <label>
-                Email
-                <input name="email" type="email" autoComplete="email" required autoFocus={mode === 'sign-in'} />
-              </label>
-              <label>
-                Password
-                <input name="password" type="password" autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'} minLength={8} required />
-              </label>
+              {mode !== 'recover-passkey' && (
+                <>
+                  <label>
+                    Email
+                    <input name="email" type="email" autoComplete="email" required autoFocus={mode === 'sign-in'} />
+                  </label>
+                  <label>
+                    Password
+                    <input name="password" type="password" autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'} minLength={8} required />
+                  </label>
+                </>
+              )}
               {mode === 'sign-up' && <TurnstileWidget key={captchaAttempt} siteKey={turnstileSiteKey} onTokenChange={setCaptchaToken} />}
               {error && <p className={s.authError} role="alert">{error}</p>}
               <button className={s.authSubmit} type="submit" disabled={submitting || (mode === 'sign-up' && !captchaToken)}>
-                {submitting ? 'WORKING…' : mode === 'sign-up' ? 'CREATE ACCOUNT' : 'SIGN IN'}
+                {submitting
+                  ? 'WORKING…'
+                  : mode === 'sign-up'
+                    ? 'CREATE ACCOUNT'
+                    : mode === 'recover-passkey'
+                      ? recoveryContext ? 'TRY PASSKEY SETUP AGAIN' : 'RESET PASSKEY'
+                      : 'SIGN IN'}
                 <span aria-hidden="true">→</span>
               </button>
+              {mode === 'sign-in' && (
+                <>
+                  <p className={s.authDivider}><span>OR</span></p>
+                  <button className={s.authPasskeyButton} type="button" disabled={submitting} onClick={() => void signInWithPasskey()}>
+                    USE A PASSKEY <span aria-hidden="true">⌁</span>
+                  </button>
+                  <button className={s.authRecoveryButton} type="button" onClick={() => { setMode('recover-passkey'); setError(''); setRecoveryContext(null); }}>
+                    Reset a passkey with a recovery code
+                  </button>
+                </>
+              )}
             </form>
-            <p className={s.authSwitch}>
-              {mode === 'sign-up' ? 'Already have an account?' : 'New here?'}{' '}
-              <button type="button" onClick={() => { setMode(mode === 'sign-up' ? 'sign-in' : 'sign-up'); setError(''); setCaptchaToken(null); setCaptchaAttempt((current) => current + 1); }}>
-                {mode === 'sign-up' ? 'Sign in' : 'Create one'}
-              </button>
-            </p>
+            {mode === 'recover-passkey' ? (
+              <p className={s.authSwitch}>
+                <button type="button" onClick={() => { setMode('sign-in'); setError(''); setRecoveryContext(null); }}>← Back to sign in</button>
+              </p>
+            ) : (
+              <p className={s.authSwitch}>
+                {mode === 'sign-up' ? 'Already have an account?' : 'New here?'}{' '}
+                <button type="button" onClick={() => { setMode(mode === 'sign-up' ? 'sign-in' : 'sign-up'); setError(''); setRecoveryContext(null); setCaptchaToken(null); setCaptchaAttempt((current) => current + 1); }}>
+                  {mode === 'sign-up' ? 'Sign in' : 'Create one'}
+                </button>
+              </p>
+            )}
           </section>
         </div>
       )}
     </>
   );
+}
+
+async function downloadPasskeyRecoveryCodes() {
+  const response = await fetch('/api/account/passkeys/recovery-codes', { method: 'POST' });
+  if (!response.ok) throw new Error('Recovery code download failed.');
+
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'force-against-something-passkey-recovery-codes.txt';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }

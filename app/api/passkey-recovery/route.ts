@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { isNull, sql } from 'drizzle-orm';
 import {
   passkeyRecoveryAttempt,
   passkeyRecoveryCode,

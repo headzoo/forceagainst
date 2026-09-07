@@ -286,7 +286,7 @@ export function OrganizationSettings({ initialOrganizationId }: { initialOrganiz
             </label>
           )}
           {organization && (
-            <section className={s.organizationModeratorPanel} aria-labelledby="organization-moderators-title">
+            <section className={cn(s.organizationModeratorPanel, organizations.length > 1 ? s.organizationModeratorAfterSwitcher : false)} aria-labelledby="organization-moderators-title">
               <p className={cn(s.step, s.organizationModeratorEyebrow)}>MODERATORS</p>
               <h2 id="organization-moderators-title">Your team.</h2>
               <p className={s.organizationModeratorIntro}>Invite an existing account by email. Every new moderator joins after the inviter; moderators can remove only people who joined after them.</p>
@@ -313,6 +313,37 @@ export function OrganizationSettings({ initialOrganizationId }: { initialOrganiz
                   </li>
                 ))}
               </ul>
+            </section>
+          )}
+          {organization && (
+            <section className={s.organizationBanPanel} aria-labelledby="organization-comment-bans-title">
+              <p className={cn(s.step, s.organizationModeratorEyebrow)}>COMMENT MODERATION</p>
+              <h2 id="organization-comment-bans-title">Banned users.</h2>
+              <p className={s.organizationSidebarIntro}>Review organization-wide bans and bans from individual action discussions.</p>
+              {commentBansError && <p className={s.organizationModeratorError} role="alert">{commentBansError}</p>}
+              {commentBansForOrganizationId !== organization.id && !commentBansError && <p className={s.organizationSidebarIntro}>Loading banned users...</p>}
+              {commentBansForOrganizationId === organization.id && commentBans.length === 0 && <p className={s.organizationSidebarIntro}>No users are banned from your organization&apos;s action discussions.</p>}
+              {commentBansForOrganizationId === organization.id && commentBans.length > 0 && (
+                <ul className={s.organizationBanList}>
+                  {commentBans.map((ban) => {
+                    const key = `${ban.scope}:${ban.user.id}:${ban.action?.id ?? 'organization'}`;
+                    return (
+                      <li key={key}>
+                        <span className={s.organizationBanAvatar} aria-hidden="true">
+                          <span>{ban.user.name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || '?'}</span>
+                          {ban.user.image && <Image src={ban.user.image} alt="" fill sizes="38px" unoptimized />}
+                        </span>
+                        <span className={s.organizationBanIdentity}>
+                          <strong>{ban.user.name}</strong>
+                          <small>@{ban.user.username}</small>
+                          <small>{ban.scope === 'organization' ? 'All organization actions' : `Action: ${ban.action?.title ?? 'Unknown action'}`}</small>
+                        </span>
+                        <button type="button" disabled={removingBanKey === key} onClick={() => void removeCommentBan(ban)}>{removingBanKey === key ? 'REMOVING...' : 'REMOVE BAN'}</button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </section>
           )}
           <Link className={s.settingsHeadingLink} href="/">← Back to the directory</Link>
@@ -354,35 +385,6 @@ export function OrganizationSettings({ initialOrganizationId }: { initialOrganiz
                 <button className={s.settingsSubmit} type="submit" disabled={saving}>{saving ? 'SAVING…' : organization ? 'SAVE ORGANIZATION' : 'CREATE ORGANIZATION'} <span>→</span></button>
                 {organization && <Link className={s.secondaryLink} href="/submit">Submit an action →</Link>}
               </form>
-              {organization && (
-                <section className={s.settingsForm} aria-labelledby="organization-comment-bans-title">
-                  <div><p className={cn(s.step, s.settingsStep)}>COMMENT MODERATION</p><h2 id="organization-comment-bans-title">Banned users</h2></div>
-                  <p className={s.settingsIntro}>Review bans from individual actions and organization-wide bans. Removing one ban does not remove any other bans for the same user.</p>
-                  {commentBansError && <p className={s.formError} role="alert">{commentBansError}</p>}
-                  {commentBansForOrganizationId !== organization.id && !commentBansError && <p className={s.settingsIntro}>Loading banned users…</p>}
-                  {commentBansForOrganizationId === organization.id && commentBans.length === 0 && <p className={s.settingsIntro}>No users are banned from your organization’s action discussions.</p>}
-                  {commentBansForOrganizationId === organization.id && commentBans.length > 0 && (
-                    <ul className={s.settingsBlockList}>
-                      {commentBans.map((ban) => {
-                        const key = `${ban.scope}:${ban.user.id}:${ban.action?.id ?? 'organization'}`;
-                        return (
-                          <li key={key}>
-                            <span className={s.settingsBlockAvatar} aria-hidden="true">
-                              <span>{ban.user.name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || '?'}</span>
-                              {ban.user.image && <Image src={ban.user.image} alt="" fill sizes="44px" unoptimized />}
-                            </span>
-                            <span className={s.settingsBlockIdentity}>
-                              <strong>{ban.user.name}</strong>
-                              <small>@{ban.user.username} · {ban.scope === 'organization' ? 'All organization actions' : `Action: ${ban.action?.title ?? 'Unknown action'}`}</small>
-                            </span>
-                            <button type="button" disabled={removingBanKey === key} onClick={() => void removeCommentBan(ban)}>{removingBanKey === key ? 'REMOVING…' : 'REMOVE BAN'}</button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </section>
-              )}
             </div>
           )}
         </div>

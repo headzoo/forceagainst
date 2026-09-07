@@ -8,6 +8,10 @@ import { AuthControl } from '@/app/auth-control';
 import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
 import { authClient } from '@/lib/auth-client';
+import { PasskeySettings } from './passkey-settings';
+
+type OrganizationSummary = { id: number; name: string; isOwner: boolean };
+type AccountContext = { error?: unknown; organizations?: OrganizationSummary[] };
 
 export function AccountSettings() {
   const { data: session, isPending } = authClient.useSession();
@@ -26,8 +30,13 @@ export function AccountSettings() {
   const [blockedUsersForUserId, setBlockedUsersForUserId] = useState<string | null>(null);
   const [blockedUsersError, setBlockedUsersError] = useState<{ userId: string; message: string } | null>(null);
   const [unblockingUserId, setUnblockingUserId] = useState<string | null>(null);
+  const [organizations, setOrganizations] = useState<OrganizationSummary[]>([]);
+  const [organizationsForUserId, setOrganizationsForUserId] = useState<string | null>(null);
+  const [organizationsError, setOrganizationsError] = useState<{ userId: string; message: string } | null>(null);
   const blockedUsersLoading = Boolean(session?.user.id && blockedUsersForUserId !== session.user.id && blockedUsersError?.userId !== session.user.id);
   const currentBlockedUsersError = blockedUsersError && blockedUsersError.userId === session?.user.id ? blockedUsersError.message : '';
+  const organizationsLoading = Boolean(session?.user.id && organizationsForUserId !== session.user.id && organizationsError?.userId !== session.user.id);
+  const currentOrganizationsError = organizationsError && organizationsError.userId === session?.user.id ? organizationsError.message : '';
 
   useEffect(() => {
     if (!session?.user.id) return;
@@ -52,6 +61,31 @@ export function AccountSettings() {
       })
       .catch((problem) => {
         if (active) setBlockedUsersError({ userId, message: problem instanceof Error ? problem.message : 'We could not load your blocked accounts.' });
+      });
+
+    return () => { active = false; };
+  }, [session?.user.id]);
+
+  useEffect(() => {
+    if (!session?.user.id) return;
+
+    let active = true;
+    const userId = session.user.id;
+    fetch('/api/account/context', { cache: 'no-store' })
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({})) as AccountContext;
+        if (!response.ok) throw new Error(String(data.error ?? 'We could not load your organizations.'));
+        return data.organizations ?? [];
+      })
+      .then((nextOrganizations) => {
+        if (active) {
+          setOrganizations(nextOrganizations);
+          setOrganizationsForUserId(userId);
+          setOrganizationsError(null);
+        }
+      })
+      .catch((problem) => {
+        if (active) setOrganizationsError({ userId, message: problem instanceof Error ? problem.message : 'We could not load your organizations.' });
       });
 
     return () => { active = false; };
@@ -175,7 +209,54 @@ export function AccountSettings() {
         <div className={s.settingsHeading}>
           <p className={s.eyebrow}><span /> ACCOUNT</p>
           <h1 className={s.settingsTitle}>Your<br /><em>profile.</em></h1>
-          <p className={s.settingsHeadingCopy}>Keep your member details and password up to date.</p>
+          <p className={s.settingsHeadingCopy}>Keep your member details, password, and passkey up to date.</p>
+          {session && (
+            <section className={s.accountOrganizationsPanel} aria-labelledby="account-organizations-title">
+              <p className={cn(s.step, s.accountOrganizationsEyebrow)}>ORGANIZATIONS</p>
+              <h2 id="account-organizations-title">Your orgs.</h2>
+              {organizationsLoading && <p className={s.accountOrganizationsIntro}>Loading organizations...</p>}
+              {currentOrganizationsError && <p className={s.organizationModeratorError} role="alert">{currentOrganizationsError}</p>}
+              {!organizationsLoading && organizationsForUserId === session.user.id && organizations.length === 0 && (
+                <p className={s.accountOrganizationsIntro}>You do not own or moderate any organizations yet.</p>
+              )}
+              {!organizationsLoading && organizationsForUserId === session.user.id && organizations.length > 0 && (
+                <ul className={s.accountOrganizationsList}>
+                  {organizations.map((organization) => (
+                    <li key={organization.id}>
+                      <Link href={`/organization?organizationId=${organization.id}`}>
+                        <strong>{organization.name}</strong>
+                        <small>{organization.isOwner ? 'Creator' : 'Moderator'}</small>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
+          {session && (
+            <section className={s.accountBlockedPanel} aria-labelledby="blocked-accounts-title">
+              <p className={cn(s.step, s.accountOrganizationsEyebrow)}>COMMENTS</p>
+              <h2 id="blocked-accounts-title">Blocked accounts.</h2>
+              <p className={s.accountSidebarIntro}>Comments from blocked accounts are hidden for you.</p>
+              {blockedUsersLoading && <p className={s.accountSidebarIntro}>Loading blocked accounts...</p>}
+              {currentBlockedUsersError && <p className={s.organizationModeratorError} role="alert">{currentBlockedUsersError}</p>}
+              {!blockedUsersLoading && blockedUsersForUserId === session.user.id && blockedUsers.length === 0 && <p className={s.accountSidebarIntro}>You have not blocked anyone.</p>}
+              {!blockedUsersLoading && blockedUsersForUserId === session.user.id && blockedUsers.length > 0 && (
+                <ul className={s.accountBlockedList}>
+                  {blockedUsers.map((blockedUser) => (
+                    <li key={blockedUser.id}>
+                      <span className={s.accountBlockedAvatar} aria-hidden="true">
+                        <span>{blockedUser.name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()}</span>
+                        {blockedUser.image && <Image src={blockedUser.image} alt="" fill sizes="38px" unoptimized />}
+                      </span>
+                      <span className={s.accountBlockedIdentity}><strong>{blockedUser.name}</strong><small>@{blockedUser.username}</small></span>
+                      <button type="button" disabled={unblockingUserId === blockedUser.id} onClick={() => void unblockUser(blockedUser.id)}>{unblockingUserId === blockedUser.id ? 'UNBLOCKING...' : 'UNBLOCK'}</button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
           <Link className={s.settingsHeadingLink} href="/">← Back to the directory</Link>
         </div>
         <div className={s.settingsPanel}>
@@ -216,27 +297,6 @@ export function AccountSettings() {
                 {nameStatus && <p className={s.formSuccess} role="status">{nameStatus}</p>}
                 <button className={s.settingsSubmit} type="submit" disabled={savingName}>{savingName ? 'SAVING…' : 'SAVE NAME'} <span>→</span></button>
               </form>
-              <section className={s.settingsForm} aria-labelledby="blocked-accounts-title">
-                <div><p className={cn(s.step, s.settingsStep)}>COMMENTS</p><h2 id="blocked-accounts-title">Blocked accounts</h2></div>
-                <p className={s.settingsIntro}>Comments from blocked accounts are hidden for you. Blocking does not notify the other person.</p>
-                {blockedUsersLoading && <p className={s.settingsIntro}>Loading blocked accounts…</p>}
-                {currentBlockedUsersError && <p className={s.formError} role="alert">{currentBlockedUsersError}</p>}
-                {!blockedUsersLoading && blockedUsersForUserId === session.user.id && blockedUsers.length === 0 && <p className={s.settingsIntro}>You have not blocked anyone.</p>}
-                {!blockedUsersLoading && blockedUsersForUserId === session.user.id && blockedUsers.length > 0 && (
-                  <ul className={s.settingsBlockList}>
-                    {blockedUsers.map((blockedUser) => (
-                      <li key={blockedUser.id}>
-                        <span className={s.settingsBlockAvatar} aria-hidden="true">
-                          <span>{blockedUser.name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()}</span>
-                          {blockedUser.image && <Image src={blockedUser.image} alt="" fill sizes="44px" unoptimized />}
-                        </span>
-                        <span className={s.settingsBlockIdentity}><strong>{blockedUser.name}</strong><small>@{blockedUser.username}</small></span>
-                        <button type="button" disabled={unblockingUserId === blockedUser.id} onClick={() => void unblockUser(blockedUser.id)}>{unblockingUserId === blockedUser.id ? 'UNBLOCKING…' : 'UNBLOCK'}</button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
               <form className={s.settingsForm} onSubmit={updatePassword}>
                 <div><p className={cn(s.step, s.settingsStep)}>SECURITY</p><h2>Change password</h2></div>
                 <label>Current password<input name="currentPassword" type="password" autoComplete="current-password" required /></label>
@@ -246,6 +306,7 @@ export function AccountSettings() {
                 {passwordStatus && <p className={s.formSuccess} role="status">{passwordStatus}</p>}
                 <button className={s.settingsSubmit} type="submit" disabled={savingPassword}>{savingPassword ? 'CHANGING…' : 'CHANGE PASSWORD'} <span>→</span></button>
               </form>
+              <PasskeySettings />
             </div>
           )}
         </div>
