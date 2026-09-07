@@ -183,6 +183,13 @@
       "when": 1788789382455,
       "tag": "0025_pale_mathemanic",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1788795964028,
+      "tag": "0026_collapse_supporter_organizations",
+      "breakpoints": true
     }
   ]
 }

@@ -3,7 +3,7 @@ import { drizzle } from 'drizzle-orm/neon-http';
 import { migrate } from 'drizzle-orm/neon-http/migrator';
 import { count, inArray } from 'drizzle-orm';
 import { actions, issues, orgs } from '../db/schema';
-import { organizationKey, supportersName } from '../lib/organization-names';
+import { AUTO_IMPORTED_ORGANIZATION_NAME } from '../lib/organization-names';
 
 const connectionString = process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL;
 
@@ -99,24 +99,6 @@ const org = (name: string, website?: string, description?: string): SeedOrganiza
   ...(website ? { website } : {}),
   ...(description ? { description } : {}),
 });
-
-function slugifyOrganization(name: string) {
-  return name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80).replace(/-+$/g, '') || 'organization';
-}
-
-function uniqueSeedOrganizationSlug(name: string, usedSlugs: Set<string>) {
-  const base = slugifyOrganization(name);
-  let candidate = base;
-  let suffix = 2;
-  while (usedSlugs.has(candidate)) {
-    const ending = `-${suffix}`;
-    candidate = `${base.slice(0, 80 - ending.length).replace(/-+$/g, '')}${ending}`;
-    suffix += 1;
-  }
-  usedSlugs.add(candidate);
-  return candidate;
-}
 
 const seedActions: SeedAction[] = missingIssueSlugs.length === 0 ? [
   { issueId: votingRights.id, organization: org('Leadership Conference on Civil and Human Rights'), slug: 'pass-john-lewis-voting-rights-act', type: 'Petition', title: 'Pass the John R. Lewis Voting Rights Advancement Act', detail: 'Tell Congress to restore and strengthen protections against discriminatory voting rules.', description: '## Why this matters\n\nThe John R. Lewis Voting Rights Advancement Act would restore and modernize federal protections against discriminatory voting practices.\n\n## What you can do\n\nAdd your name and urge Congress to pass the bill.', effort: '2 min', href: 'https://civilrights.org/john-lewis-voting-rights-act/', urgent: true, sortOrder: 1 },
@@ -927,35 +909,16 @@ const seedActions: SeedAction[] = missingIssueSlugs.length === 0 ? [
 ] : [];
 
 const existingOrganizations = await db.select({ id: orgs.id, slug: orgs.slug, name: orgs.name }).from(orgs);
-const organizationsByName = new Map(existingOrganizations.map((organization) => [organization.name, organization]));
-const organizationsByKey = new Map(existingOrganizations.map((organization) => [organizationKey(organization.name), organization]));
-const usedOrganizationSlugs = new Set(existingOrganizations.map((organization) => organization.slug));
+const autoImportOrganization = existingOrganizations.find((organization) => organization.name === AUTO_IMPORTED_ORGANIZATION_NAME);
+
+if (seedActions.length > 0 && !autoImportOrganization) {
+  throw new Error(`The ${AUTO_IMPORTED_ORGANIZATION_NAME} organization is missing after migrations.`);
+}
 
 for (const action of seedActions) {
-  const organizationName = supportersName(action.organization.name);
-  const organizationUpdate = {
-    updatedAt: new Date(),
-    ...(action.organization.website ? { website: action.organization.website } : {}),
-    ...(action.organization.description ? { description: action.organization.description } : {}),
-  };
-
-  let organization = organizationsByName.get(organizationName) ?? organizationsByKey.get(organizationKey(organizationName));
-  if (organization) {
-    await db.update(orgs).set(organizationUpdate).where(inArray(orgs.id, [organization.id]));
-  } else {
-    [organization] = await db.insert(orgs).values({
-      name: organizationName,
-      slug: uniqueSeedOrganizationSlug(organizationName, usedOrganizationSlugs),
-      ...(action.organization.website ? { website: action.organization.website } : {}),
-      ...(action.organization.description ? { description: action.organization.description } : {}),
-    }).returning({ id: orgs.id, slug: orgs.slug, name: orgs.name });
-    organizationsByName.set(organization.name, organization);
-    organizationsByKey.set(organizationKey(organization.name), organization);
-  }
-
   const values: typeof actions.$inferInsert = {
     issueId: action.issueId,
-    orgId: organization.id,
+    orgId: autoImportOrganization!.id,
     automaticallyAdded: true,
     slug: action.slug,
     type: action.type,

@@ -1,4 +1,5 @@
-export const SUPPORTERS_PREFIX = 'Supporters of ';
+export const AUTO_IMPORTED_ORGANIZATION_NAME = 'Supporters of Force';
+export const AUTO_IMPORTED_ORGANIZATION_SLUG = 'supporters-of-force';
 
 function comparableText(value: string) {
   return value
@@ -12,9 +13,4 @@ function comparableText(value: string) {
 
 export function organizationKey(value: string) {
   return comparableText(value.replace(/^supporters of\s+/i, ''));
-}
-
-export function supportersName(value: string) {
-  const cleanName = value.trim().replace(/\s+/g, ' ').slice(0, 160).replace(/^supporters of\s+/i, '');
-  return `${SUPPORTERS_PREFIX}${cleanName || 'an unnamed organization'}`;
 }

@@ -59,7 +59,7 @@ Append `.json` to a public action, issue, or organization URL to receive the sam
 
 ## Automatic action discovery
 
-The action discovery job searches the web once for each issue and adds genuinely new results to the admin review queue. It reuses an existing organization when its name or website matches. Newly created organization records are named `Supporters of <organization>` to make clear that they are directory-managed profiles, not official accounts.
+The action discovery job searches the web once for each issue and adds genuinely new results to the admin review queue. Every automatically imported action belongs to the shared `Supporters of Force` organization; the action copy and destination URL continue to identify the organization responsible for the original action.
 
 Set `OPENAI_API_KEY` in `.env.local`, then run:
 

@@ -1,10 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { organizationKey, supportersName } from '../lib/organization-names';
+import {
+  AUTO_IMPORTED_ORGANIZATION_NAME,
+  AUTO_IMPORTED_ORGANIZATION_SLUG,
+  organizationKey,
+} from '../lib/organization-names';
 
-test('supportersName adds exactly one canonical prefix', () => {
-  assert.equal(supportersName('American Civil Liberties Union'), 'Supporters of American Civil Liberties Union');
-  assert.equal(supportersName('supporters of  American Civil Liberties Union'), 'Supporters of American Civil Liberties Union');
+test('auto-imported actions use one canonical organization identity', () => {
+  assert.equal(AUTO_IMPORTED_ORGANIZATION_NAME, 'Supporters of Force');
+  assert.equal(AUTO_IMPORTED_ORGANIZATION_SLUG, 'supporters-of-force');
 });
 
 test('organizationKey matches prefixed and unprefixed organization names', () => {
