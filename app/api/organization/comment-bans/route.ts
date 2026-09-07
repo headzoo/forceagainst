@@ -1,7 +1,8 @@
 import { and, desc, eq } from 'drizzle-orm';
-import { actionCommentBans, actions, organizationCommentBans, orgs, user } from '@/db/schema';
+import { actionCommentBans, actions, organizationCommentBans, user } from '@/db/schema';
 import { db } from '@/lib/db';
 import { getMemberSession } from '@/lib/member';
+import { getOrganizationMembership } from '@/lib/organization-membership';
 
 type BanRemovalInput = {
   scope: 'action' | 'organization';
@@ -9,12 +10,9 @@ type BanRemovalInput = {
   actionId: number | null;
 };
 
-async function getOwnedOrganization(userId: string) {
-  const [organization] = await db.select({ id: orgs.id })
-    .from(orgs)
-    .where(eq(orgs.ownerUserId, userId))
-    .limit(1);
-  return organization ?? null;
+function readOrganizationId(value: unknown) {
+  const organizationId = typeof value === 'number' ? value : Number(value);
+  return Number.isSafeInteger(organizationId) && organizationId > 0 ? organizationId : null;
 }
 
 function readRemovalInput(value: unknown): BanRemovalInput | null {
@@ -29,12 +27,14 @@ function readRemovalInput(value: unknown): BanRemovalInput | null {
   return { scope, userId, actionId };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await getMemberSession();
   if (!session) return Response.json({ error: 'Sign in to manage organization bans.' }, { status: 401 });
 
-  const organization = await getOwnedOrganization(session.user.id);
-  if (!organization) return Response.json({ error: 'Create an organization before managing bans.' }, { status: 404 });
+  const requestedOrganizationId = readOrganizationId(new URL(request.url).searchParams.get('organizationId'));
+  if (!requestedOrganizationId) return Response.json({ error: 'Choose an organization.' }, { status: 400 });
+  const organization = await getOrganizationMembership(session.user.id, requestedOrganizationId);
+  if (!organization) return Response.json({ error: 'You do not moderate that organization.' }, { status: 403 });
 
   const [organizationBans, actionBans] = await Promise.all([
     db.select({
@@ -46,7 +46,7 @@ export async function GET() {
     })
       .from(organizationCommentBans)
       .innerJoin(user, eq(organizationCommentBans.userId, user.id))
-      .where(eq(organizationCommentBans.organizationId, organization.id))
+      .where(eq(organizationCommentBans.organizationId, organization.organizationId))
       .orderBy(desc(organizationCommentBans.createdAt)),
     db.select({
       userId: user.id,
@@ -60,7 +60,7 @@ export async function GET() {
       .from(actionCommentBans)
       .innerJoin(actions, eq(actionCommentBans.actionId, actions.id))
       .innerJoin(user, eq(actionCommentBans.userId, user.id))
-      .where(eq(actions.orgId, organization.id))
+      .where(eq(actions.orgId, organization.organizationId))
       .orderBy(desc(actionCommentBans.createdAt)),
   ]);
 
@@ -86,21 +86,24 @@ export async function DELETE(request: Request) {
   const session = await getMemberSession();
   if (!session) return Response.json({ error: 'Sign in to manage organization bans.' }, { status: 401 });
 
-  const organization = await getOwnedOrganization(session.user.id);
-  if (!organization) return Response.json({ error: 'Only the organization owner can remove bans.' }, { status: 403 });
+  const body = await request.json().catch(() => null) as (BanRemovalInput & { organizationId?: unknown }) | null;
+  const requestedOrganizationId = readOrganizationId(body?.organizationId);
+  if (!requestedOrganizationId) return Response.json({ error: 'Choose an organization.' }, { status: 400 });
+  const organization = await getOrganizationMembership(session.user.id, requestedOrganizationId);
+  if (!organization) return Response.json({ error: 'You do not moderate that organization.' }, { status: 403 });
 
-  const input = readRemovalInput(await request.json().catch(() => null));
+  const input = readRemovalInput(body);
   if (!input) return Response.json({ error: 'Choose a valid ban to remove.' }, { status: 400 });
 
   if (input.scope === 'organization') {
     await db.delete(organizationCommentBans).where(and(
-      eq(organizationCommentBans.organizationId, organization.id),
+      eq(organizationCommentBans.organizationId, organization.organizationId),
       eq(organizationCommentBans.userId, input.userId),
     ));
   } else {
     const [ownedAction] = await db.select({ id: actions.id })
       .from(actions)
-      .where(and(eq(actions.id, input.actionId!), eq(actions.orgId, organization.id)))
+      .where(and(eq(actions.id, input.actionId!), eq(actions.orgId, organization.organizationId)))
       .limit(1);
     if (!ownedAction) return Response.json({ error: 'That action does not belong to your organization.' }, { status: 404 });
 

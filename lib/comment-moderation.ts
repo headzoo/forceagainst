@@ -1,5 +1,5 @@
-import { eq } from 'drizzle-orm';
-import { actionCommentBans, actions, organizationCommentBans, orgs } from '@/db/schema';
+import { and, eq } from 'drizzle-orm';
+import { actionCommentBans, actions, organizationCommentBans, organizationMembers, orgs } from '@/db/schema';
 import { resolveActionCommentModerationPermissions } from '@/lib/comment-moderation-policy';
 import { db } from '@/lib/db';
 
@@ -26,16 +26,23 @@ export async function getActionCommentModerationAccess(
       organizationId: actions.orgId,
       organizationName: orgs.name,
       submittedByUserId: actions.submittedByUserId,
-      ownerUserId: orgs.ownerUserId,
+      moderatorMembershipId: organizationMembers.id,
     })
     .from(actions)
     .innerJoin(orgs, eq(actions.orgId, orgs.id))
+    .leftJoin(organizationMembers, and(
+      eq(organizationMembers.organizationId, orgs.id),
+      eq(organizationMembers.userId, userId),
+    ))
     .where(eq(actions.id, actionId))
     .limit(1);
 
   if (!action) return null;
 
-  const permissions = resolveActionCommentModerationPermissions(action, userId);
+  const permissions = resolveActionCommentModerationPermissions({
+    submittedByUserId: action.submittedByUserId,
+    isOrganizationModerator: action.moderatorMembershipId !== null,
+  }, userId);
 
   return {
     actionId: action.actionId,

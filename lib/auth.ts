@@ -1,5 +1,6 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
-import { betterAuth } from 'better-auth';
+import { passkey } from '@better-auth/passkey';
+import { betterAuth, getCurrentAdapter, type BetterAuthPlugin } from 'better-auth';
 import { APIError } from 'better-auth/api';
 import { captcha } from 'better-auth/plugins';
 import { eq } from 'drizzle-orm';
@@ -7,11 +8,34 @@ import * as schema from '@/db/schema';
 import { user } from '@/db/schema';
 import { db } from '@/lib/db';
 import { normalizeUsername, usernameError } from '@/lib/username';
+import {
+  parsePasskeyRecoveryContext,
+  readPasskeyRecoveryVerificationValue,
+} from '@/lib/passkey-recovery';
 import { sendVerificationEmail } from '@/lib/verification-email';
 
 const developmentTurnstileSecret = '1x0000000000000000000000000000000AA';
 const turnstileSecretKey = process.env.TURNSTILE_SECRET_KEY
   ?? (process.env.NODE_ENV === 'development' ? developmentTurnstileSecret : 'TURNSTILE_SECRET_KEY_NOT_CONFIGURED');
+
+const passkeyRecoverySchema = {
+  id: 'passkey-recovery-schema',
+  schema: {
+    passkeyRecoveryCode: {
+      fields: {
+        userId: {
+          type: 'string',
+          required: true,
+          references: { model: 'user', field: 'id', onDelete: 'cascade' },
+          index: true,
+        },
+        codeHash: { type: 'string', required: true, unique: true, returned: false },
+        createdAt: { type: 'date', required: true },
+        usedAt: { type: 'date', required: false },
+      },
+    },
+  },
+} satisfies BetterAuthPlugin;
 
 export const auth = betterAuth({
   appName: 'Force Against Something',
@@ -72,6 +96,76 @@ export const auth = betterAuth({
     },
   },
   plugins: [
+    passkeyRecoverySchema,
+    passkey({
+      rpName: 'Force Against Something',
+      authenticatorSelection: {
+        residentKey: 'required',
+        userVerification: 'discouraged',
+      },
+      registration: {
+        requireSession: false,
+        resolveUser: async ({ ctx, context }) => {
+          const recoveryContext = parsePasskeyRecoveryContext(context);
+          if (!recoveryContext) {
+            throw new APIError('UNAUTHORIZED', { message: 'That recovery request is invalid or expired.' });
+          }
+
+          const verification = await ctx.context.internalAdapter
+            .findVerificationValue(recoveryContext.identifier);
+          const recoveryUserId = verification
+            ? readPasskeyRecoveryVerificationValue(verification.value)
+            : null;
+          if (recoveryUserId !== recoveryContext.userId) {
+            throw new APIError('UNAUTHORIZED', { message: 'That recovery request is invalid or expired.' });
+          }
+
+          const [member] = await db.select({
+            id: user.id,
+            email: user.email,
+            name: user.name,
+          }).from(user).where(eq(user.id, recoveryUserId)).limit(1);
+          if (!member) {
+            throw new APIError('UNAUTHORIZED', { message: 'That recovery request is invalid or expired.' });
+          }
+
+          return { id: member.id, name: member.email, displayName: member.name };
+        },
+        afterVerification: async ({ ctx, context, user: recoveryUser }) => {
+          if (!context) return { name: 'Passkey' };
+
+          const recoveryContext = parsePasskeyRecoveryContext(context);
+          if (!recoveryContext || recoveryContext.userId !== recoveryUser.id) {
+            throw new APIError('UNAUTHORIZED', { message: 'That recovery request is invalid or expired.' });
+          }
+
+          const verification = await ctx.context.internalAdapter
+            .consumeVerificationValue(recoveryContext.identifier);
+          if (
+            !verification
+            || readPasskeyRecoveryVerificationValue(verification.value) !== recoveryUser.id
+          ) {
+            throw new APIError('UNAUTHORIZED', { message: 'That recovery request is invalid or expired.' });
+          }
+
+          const adapter = await getCurrentAdapter(ctx.context.adapter as Parameters<typeof getCurrentAdapter>[0]);
+          await adapter.deleteMany({
+            model: 'passkey',
+            where: [{ field: 'userId', value: recoveryUser.id }],
+          });
+          await adapter.deleteMany({
+            model: 'passkeyRecoveryCode',
+            where: [{ field: 'userId', value: recoveryUser.id }],
+          });
+          await adapter.deleteMany({
+            model: 'session',
+            where: [{ field: 'userId', value: recoveryUser.id }],
+          });
+
+          return { userId: recoveryUser.id, name: 'Recovered passkey' };
+        },
+      },
+    }),
     captcha({
       provider: 'cloudflare-turnstile',
       secretKey: turnstileSecretKey,

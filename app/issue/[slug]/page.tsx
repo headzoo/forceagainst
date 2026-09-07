@@ -5,11 +5,11 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { ActionList } from '@/app/action-list';
 import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
 import { getPublishedIssue } from '@/lib/db';
 import { createSiteMetadata, summarizeForMetadata } from '@/lib/site-metadata';
-import { IssueActionsList } from '../issue-actions-list';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,7 +97,7 @@ export default async function IssuePage({ params }: IssuePageProps) {
         <div className={s.sectionHeading}>
           <div><p className={s.eyebrow}><span /> MAKE YOUR MOVE</p><h2 className={s.issuePageActionHeading}>Take <span className={s.headingEndLockup}>action<Image className={s.headingEndStar} src="/issue-page-take-action-star.png" alt="" width={99} height={99} aria-hidden="true" unoptimized /></span></h2></div>
         </div>
-        <IssueActionsList actions={actions} />
+        <ActionList actions={actions} paginate />
       </section>
 
       <SiteFooter />

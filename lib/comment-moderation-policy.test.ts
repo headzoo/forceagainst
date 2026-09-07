@@ -2,30 +2,30 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { resolveActionCommentModerationPermissions } from './comment-moderation-policy';
 
-test('the action submitter can moderate only that action when they are not the organization owner', () => {
+test('the action submitter can moderate only that action when they are not an organization moderator', () => {
   assert.deepEqual(resolveActionCommentModerationPermissions({
     submittedByUserId: 'submitter',
-    ownerUserId: 'owner',
+    isOrganizationModerator: false,
   }, 'submitter'), {
     canModerate: true,
     canBanOrganization: false,
   });
 });
 
-test('the organization owner can moderate the action and apply organization-wide bans', () => {
+test('an organization moderator can moderate the action and apply organization-wide bans', () => {
   assert.deepEqual(resolveActionCommentModerationPermissions({
     submittedByUserId: 'submitter',
-    ownerUserId: 'owner',
-  }, 'owner'), {
+    isOrganizationModerator: true,
+  }, 'moderator'), {
     canModerate: true,
     canBanOrganization: true,
   });
 });
 
-test('other members receive no moderation permissions', () => {
+test('other users receive no moderation permissions', () => {
   assert.deepEqual(resolveActionCommentModerationPermissions({
     submittedByUserId: 'submitter',
-    ownerUserId: 'owner',
+    isOrganizationModerator: false,
   }, 'member'), {
     canModerate: false,
     canBanOrganization: false,

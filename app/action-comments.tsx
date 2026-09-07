@@ -250,7 +250,7 @@ function CommentBanDialog({ target, organizationName, canBanOrganization, workin
           </label>
           <label className={s.commentModerationOption}>
             <input type="checkbox" checked={banFromOrganization} disabled={!canBanOrganization} onChange={(event) => setBanFromOrganization(event.target.checked)} />
-            <span><strong>Ban from the whole organization</strong><small>{canBanOrganization ? `Stops participation in every ${organizationName} action discussion.` : 'Only the organization owner can apply this ban.'}</small></span>
+            <span><strong>Ban from the whole organization</strong><small>{canBanOrganization ? `Stops participation in every ${organizationName} action discussion.` : 'Only an organization moderator can apply this ban.'}</small></span>
           </label>
           {error && <p className={s.commentError} role="alert">{error}</p>}
           <div className={s.commentModerationButtons}>

@@ -10,6 +10,11 @@ export const metadata: Metadata = createSiteMetadata({
   path: '/organization',
 });
 
-export default function OrganizationPage() {
-  return <OrganizationSettings />;
+export default async function OrganizationPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ organizationId?: string }>;
+}) {
+  const organizationId = Number((await searchParams).organizationId);
+  return <OrganizationSettings initialOrganizationId={Number.isSafeInteger(organizationId) && organizationId > 0 ? organizationId : null} />;
 }

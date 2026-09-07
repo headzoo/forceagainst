@@ -3,7 +3,13 @@ import { orgs, type OpenGraphMetadata } from '@/db/schema';
 import { db } from '@/lib/db';
 import { getMemberSession } from '@/lib/member';
 import { analyzeWebsiteHref, parsePublicHttpUrl } from '@/lib/action-metadata';
+import { getOrganizationMembership } from '@/lib/organization-membership';
 import { uniqueOrganizationSlug } from '@/lib/slugs';
+
+function readOrganizationId(value: unknown) {
+  const organizationId = typeof value === 'number' ? value : Number(value);
+  return Number.isSafeInteger(organizationId) && organizationId > 0 ? organizationId : null;
+}
 
 export async function POST(request: Request) {
   const session = await getMemberSession();
@@ -12,7 +18,7 @@ export async function POST(request: Request) {
   const [existing] = await db.select().from(orgs).where(eq(orgs.ownerUserId, session.user.id)).limit(1);
   if (existing) return Response.json({ error: 'Your account already has an organization.', organization: existing }, { status: 409 });
 
-  const body = await request.json().catch(() => null) as { name?: unknown; website?: unknown; description?: unknown } | null;
+  const body = await request.json().catch(() => null) as { organizationId?: unknown; name?: unknown; website?: unknown; description?: unknown } | null;
   const name = typeof body?.name === 'string' ? body.name.trim().replace(/\s+/g, ' ') : '';
   const websiteInput = typeof body?.website === 'string' ? body.website.trim() : '';
   const description = typeof body?.description === 'string' ? body.description.trim() : '';
@@ -57,10 +63,14 @@ export async function PATCH(request: Request) {
   const session = await getMemberSession();
   if (!session) return Response.json({ error: 'Sign in to update your organization.' }, { status: 401 });
 
-  const [existing] = await db.select().from(orgs).where(eq(orgs.ownerUserId, session.user.id)).limit(1);
-  if (!existing) return Response.json({ error: 'Create an organization before updating it.' }, { status: 404 });
+  const body = await request.json().catch(() => null) as { organizationId?: unknown; name?: unknown; website?: unknown; description?: unknown } | null;
+  const requestedOrganizationId = readOrganizationId(body?.organizationId);
+  if (!requestedOrganizationId) return Response.json({ error: 'Choose an organization.' }, { status: 400 });
+  const membership = await getOrganizationMembership(session.user.id, requestedOrganizationId);
+  if (!membership) return Response.json({ error: 'You do not moderate that organization.' }, { status: 403 });
 
-  const body = await request.json().catch(() => null) as { name?: unknown; website?: unknown; description?: unknown } | null;
+  const [existing] = await db.select().from(orgs).where(eq(orgs.id, membership.organizationId)).limit(1);
+  if (!existing) return Response.json({ error: 'That organization no longer exists.' }, { status: 404 });
   const name = typeof body?.name === 'string' ? body.name.trim().replace(/\s+/g, ' ') : '';
   const websiteInput = typeof body?.website === 'string' ? body.website.trim() : '';
   const description = typeof body?.description === 'string' ? body.description.trim() : '';
@@ -95,7 +105,7 @@ export async function PATCH(request: Request) {
     const [organization] = await db
       .update(orgs)
       .set({ name, website, openGraph, description, updatedAt: new Date() })
-      .where(eq(orgs.ownerUserId, session.user.id))
+      .where(eq(orgs.id, membership.organizationId))
       .returning();
 
     return Response.json({ organization });

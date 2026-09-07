@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm';
-import { actions, issues, orgs } from '@/db/schema';
+import { actions, issues, organizationMembers } from '@/db/schema';
 import { analyzeActionHref, parsePublicHttpUrl } from '@/lib/action-metadata';
 import { db } from '@/lib/db';
 import { parseGovernmentActionFields } from '@/lib/government-action-context';
@@ -13,7 +13,7 @@ function parseActionId(value: string) {
   return Number.isSafeInteger(id) && id > 0 ? id : null;
 }
 
-async function getOwnedAction(id: number, userId: string) {
+async function getModeratedAction(id: number, userId: string) {
   const [action] = await db
     .select({
       id: actions.id,
@@ -33,8 +33,8 @@ async function getOwnedAction(id: number, userId: string) {
       published: actions.published,
     })
     .from(actions)
-    .innerJoin(orgs, eq(actions.orgId, orgs.id))
-    .where(and(eq(actions.id, id), eq(orgs.ownerUserId, userId)))
+    .innerJoin(organizationMembers, eq(actions.orgId, organizationMembers.organizationId))
+    .where(and(eq(actions.id, id), eq(organizationMembers.userId, userId)))
     .limit(1);
 
   return action;
@@ -48,7 +48,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   const id = parseActionId(value);
   if (!id) return Response.json({ error: 'Invalid action.' }, { status: 400 });
 
-  const action = await getOwnedAction(id, session.user.id);
+  const action = await getModeratedAction(id, session.user.id);
   if (!action) return Response.json({ error: 'Action not found.' }, { status: 404 });
 
   return Response.json({ action });
@@ -62,7 +62,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   const id = parseActionId(value);
   if (!id) return Response.json({ error: 'Invalid action.' }, { status: 400 });
 
-  const existing = await getOwnedAction(id, session.user.id);
+  const existing = await getModeratedAction(id, session.user.id);
   if (!existing) return Response.json({ error: 'Action not found.' }, { status: 404 });
 
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;

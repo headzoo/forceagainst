@@ -98,6 +98,18 @@ export const orgs = pgTable('orgs', {
   uniqueIndex('orgs_name_unique').on(table.name),
 ]);
 
+export const organizationMembers = pgTable('organization_members', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  organizationId: bigint('organization_id', { mode: 'number' }).notNull().references(() => orgs.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  invitedByUserId: text('invited_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('organization_members_organization_user_unique').on(table.organizationId, table.userId),
+  index('organization_members_user_idx').on(table.userId),
+  index('organization_members_organization_tier_idx').on(table.organizationId, table.id),
+]);
+
 export const actions = pgTable('actions', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
   issueId: bigint('issue_id', { mode: 'number' }).notNull().references(() => issues.id, { onDelete: 'cascade' }),
@@ -349,6 +361,7 @@ export const congressMembers = pgTable('congress_members', {
 
 export type Issue = typeof issues.$inferSelect;
 export type Organization = typeof orgs.$inferSelect;
+export type OrganizationMember = typeof organizationMembers.$inferSelect;
 export type ActionRecord = typeof actions.$inferSelect;
 export type ActionLike = typeof actionLikes.$inferSelect;
 export type ActionComment = typeof actionComments.$inferSelect;

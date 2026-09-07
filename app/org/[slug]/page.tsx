@@ -4,12 +4,12 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { ActionList } from '@/app/action-list';
 import { OpenGraphPreview } from '@/app/open-graph-preview';
 import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
 import { getPublishedOrganizationBySlug } from '@/lib/db';
 import { createSiteMetadata, summarizeForMetadata } from '@/lib/site-metadata';
-import { OrganizationActionsList } from '../organization-actions-list';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,6 +50,8 @@ export default async function OrganizationPage({ params }: OrganizationPageProps
     detail: action.detail,
     type: action.type,
     urgent: action.urgent,
+    organization: organization.name,
+    organizationSlug: organization.slug,
     issue: action.issue,
     issueSlug: action.issueSlug,
     effort: action.effort,
@@ -104,7 +106,12 @@ export default async function OrganizationPage({ params }: OrganizationPageProps
         <div className={s.sectionHeading}>
           <div><p className={s.eyebrow}><span /> THEIR WORK</p><h2>Actions</h2></div>
         </div>
-        <OrganizationActionsList actions={actions} />
+        <ActionList
+          actions={actions}
+          emptyMessage="This organization has no published actions yet."
+          includeIssue
+          paginate
+        />
       </section>
 
       <SiteFooter />

@@ -38,10 +38,10 @@ export async function POST(request: Request, { params }: RouteContext) {
 
   const access = await getActionCommentModerationAccess(actionId, session.user.id);
   if (!access?.canModerate) {
-    return Response.json({ error: 'Only this action’s submitter or organization owner can ban participants.' }, { status: 403 });
+    return Response.json({ error: 'Only this action’s submitter or an organization moderator can ban participants.' }, { status: 403 });
   }
   if (input.banFromOrganization && !access.canBanOrganization) {
-    return Response.json({ error: 'Only the organization owner can ban a participant from every organization action.' }, { status: 403 });
+    return Response.json({ error: 'Only an organization moderator can ban a participant from every organization action.' }, { status: 403 });
   }
 
   const [participant] = await db.select({ userId: actionComments.userId })

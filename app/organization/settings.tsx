@@ -4,13 +4,26 @@ import { cn, s } from '@/app/tailwind-styles';
 import Image from 'next/image';
 import Link from 'next/link';
 import { type FormEvent, useEffect, useState } from 'react';
+import { ActionList, type ActionListItem } from '@/app/action-list';
 import { AuthControl } from '@/app/auth-control';
 import { SiteFooter } from '@/app/site-footer';
 import { SiteHeader } from '@/app/site-header';
 import { authClient } from '@/lib/auth-client';
 
 type Organization = { id: number; name: string; avatar: string | null; website: string | null; description: string };
-type OrganizationAction = { id: number; type: 'Petition' | 'Lawsuit' | 'Campaign'; title: string; detail: string; approved: boolean; published: boolean };
+type OrganizationSummary = { id: number; name: string; isOwner: boolean };
+type OrganizationAction = ActionListItem & { approved: boolean; published: boolean };
+type OrganizationModerator = {
+  membershipId: number;
+  userId: string;
+  name: string;
+  email: string;
+  image: string | null;
+  invitedByName: string | null;
+  tier: number;
+  isOwner: boolean;
+  canRemove: boolean;
+};
 type OrganizationCommentBan = {
   scope: 'action' | 'organization';
   user: { id: string; name: string; username: string; image: string | null };
@@ -18,7 +31,15 @@ type OrganizationCommentBan = {
   bannedAt: string;
 };
 
-export function OrganizationSettings() {
+type AccountContext = {
+  error?: unknown;
+  organization?: Organization | null;
+  organizations?: OrganizationSummary[];
+  moderators?: OrganizationModerator[];
+  actions?: OrganizationAction[];
+};
+
+export function OrganizationSettings({ initialOrganizationId }: { initialOrganizationId: number | null }) {
   const { data: session, isPending } = authClient.useSession();
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [loadedForUser, setLoadedForUser] = useState('');
@@ -26,6 +47,13 @@ export function OrganizationSettings() {
   const [website, setWebsite] = useState('');
   const [description, setDescription] = useState('');
   const [actions, setActions] = useState<OrganizationAction[]>([]);
+  const [organizations, setOrganizations] = useState<OrganizationSummary[]>([]);
+  const [moderators, setModerators] = useState<OrganizationModerator[]>([]);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteStatus, setInviteStatus] = useState('');
+  const [inviteError, setInviteError] = useState('');
+  const [inviting, setInviting] = useState(false);
+  const [removingModeratorId, setRemovingModeratorId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
@@ -43,9 +71,12 @@ export function OrganizationSettings() {
     if (!session) return;
     let active = true;
 
-    fetch('/api/account/context')
+    const contextUrl = initialOrganizationId
+      ? `/api/account/context?organizationId=${initialOrganizationId}`
+      : '/api/account/context';
+    fetch(contextUrl)
       .then(async (response) => {
-        const data = await response.json().catch(() => ({})) as { error?: unknown; organization?: Organization | null; actions?: OrganizationAction[] };
+        const data = await response.json().catch(() => ({})) as AccountContext;
         if (!response.ok) throw new Error(String(data.error ?? 'Could not load your organization.'));
         if (!active) return;
         const nextOrganization = data.organization ?? null;
@@ -54,6 +85,11 @@ export function OrganizationSettings() {
         setWebsite(nextOrganization?.website ?? '');
         setDescription(nextOrganization?.description ?? '');
         setActions(data.actions ?? []);
+        setOrganizations(data.organizations ?? []);
+        setModerators(data.moderators ?? []);
+        setInviteEmail('');
+        setInviteStatus('');
+        setInviteError('');
         setPendingAvatar(null);
         setAvatarStatus('');
         setAvatarError('');
@@ -62,13 +98,13 @@ export function OrganizationSettings() {
       .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'Could not load your organization.'); });
 
     return () => { active = false; };
-  }, [session]);
+  }, [initialOrganizationId, session]);
 
   useEffect(() => {
     if (!session || !organizationId) return;
     let active = true;
 
-    fetch('/api/organization/comment-bans', { cache: 'no-store' })
+    fetch(`/api/organization/comment-bans?organizationId=${organizationId}`, { cache: 'no-store' })
       .then(async (response) => {
         const data = await response.json().catch(() => ({})) as { error?: unknown; bans?: OrganizationCommentBan[] };
         if (!response.ok) throw new Error(String(data.error ?? 'Could not load comment bans.'));
@@ -95,7 +131,7 @@ export function OrganizationSettings() {
     const response = await fetch('/api/orgs', {
       method: organization ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, website, description }),
+      body: JSON.stringify({ organizationId, name, website, description }),
     });
     const data = await response.json().catch(() => ({})) as { error?: unknown; organization?: Organization };
     setSaving(false);
@@ -110,6 +146,49 @@ export function OrganizationSettings() {
     setWebsite(data.organization.website ?? '');
     setDescription(data.organization.description);
     setStatus(organization ? 'Your organization has been updated.' : 'Your organization has been created. You can now submit actions.');
+    if (!organization) window.location.assign(`/organization?organizationId=${data.organization.id}`);
+  }
+
+  async function inviteModerator(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!organization) return;
+    setInviting(true);
+    setInviteError('');
+    setInviteStatus('');
+    const response = await fetch('/api/organization/moderators', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ organizationId: organization.id, email: inviteEmail }),
+    });
+    const data = await response.json().catch(() => ({})) as { error?: unknown; moderators?: OrganizationModerator[] };
+    setInviting(false);
+    if (!response.ok || !data.moderators) {
+      setInviteError(String(data.error ?? 'Could not invite that moderator.'));
+      return;
+    }
+    setModerators(data.moderators);
+    setInviteEmail('');
+    setInviteStatus('Moderator added. They can manage this organization now.');
+  }
+
+  async function removeModerator(moderator: OrganizationModerator) {
+    if (!organization) return;
+    setRemovingModeratorId(moderator.membershipId);
+    setInviteError('');
+    setInviteStatus('');
+    const response = await fetch('/api/organization/moderators', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ organizationId: organization.id, membershipId: moderator.membershipId }),
+    });
+    const data = await response.json().catch(() => ({})) as { error?: unknown };
+    setRemovingModeratorId(null);
+    if (!response.ok) {
+      setInviteError(String(data.error ?? 'Could not remove that moderator.'));
+      return;
+    }
+    setModerators((current) => current.filter((item) => item.membershipId !== moderator.membershipId));
+    setInviteStatus(`${moderator.name} is no longer a moderator.`);
   }
 
   async function removeCommentBan(ban: OrganizationCommentBan) {
@@ -120,7 +199,7 @@ export function OrganizationSettings() {
       const response = await fetch('/api/organization/comment-bans', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scope: ban.scope, userId: ban.user.id, actionId: ban.action?.id ?? null }),
+        body: JSON.stringify({ organizationId, scope: ban.scope, userId: ban.user.id, actionId: ban.action?.id ?? null }),
       });
       const data = await response.json().catch(() => ({})) as { error?: unknown };
       if (!response.ok) throw new Error(String(data.error ?? 'Could not remove that ban.'));
@@ -173,7 +252,7 @@ export function OrganizationSettings() {
     const response = await fetch('/api/organization/avatar', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image }),
+      body: JSON.stringify({ organizationId: organization.id, image }),
     });
     const data = await response.json().catch(() => ({})) as { error?: unknown; image?: string | null };
     setSavingAvatar(false);
@@ -198,22 +277,43 @@ export function OrganizationSettings() {
         <div className={s.settingsHeading}>
           <p className={s.eyebrow}><span /> ORGANIZATION</p>
           <h1 className={s.settingsTitle}>Your<br /><em>force.</em></h1>
+          {organizations.length > 1 && organization && (
+            <label className={s.organizationSwitcher}>
+              Managing organization
+              <select value={organization.id} onChange={(event) => window.location.assign(`/organization?organizationId=${event.target.value}`)}>
+                {organizations.map((item) => <option key={item.id} value={item.id}>{item.name}{item.isOwner ? ' — creator' : ''}</option>)}
+              </select>
+            </label>
+          )}
           {organization && (
-            <div className={s.organizationActionList}>
-              <p className={cn(s.step, s.organizationActionListLabel)}>YOUR ACTIONS / {String(actions.length).padStart(2, '0')}</p>
-              {actions.map((action, index) => (
-                <Link className={s.organizationActionRow} href={`/organization/actions/${action.id}`} key={action.id}>
-                  <span className={s.organizationActionNumber}>{String(index + 1).padStart(2, '0')}</span>
-                  <span className={s.organizationActionCopy}>
-                    <span className={s.organizationActionMeta}><b>{action.type}</b><i>{action.approved && action.published ? 'Published' : 'Awaiting approval'}</i></span>
-                    <strong>{action.title}</strong>
-                    <small>{action.detail}</small>
-                  </span>
-                  <span className={s.organizationActionArrow} aria-hidden="true">→</span>
-                </Link>
-              ))}
-              {actions.length === 0 && <p className={s.organizationActionsEmpty}>No actions submitted yet.</p>}
-            </div>
+            <section className={s.organizationModeratorPanel} aria-labelledby="organization-moderators-title">
+              <p className={cn(s.step, s.organizationModeratorEyebrow)}>MODERATORS</p>
+              <h2 id="organization-moderators-title">Your team.</h2>
+              <p className={s.organizationModeratorIntro}>Invite an existing account by email. Every new moderator joins after the inviter; moderators can remove only people who joined after them.</p>
+              <form className={s.organizationInviteForm} onSubmit={inviteModerator}>
+                <label>Email address<input type="email" value={inviteEmail} onChange={(event) => setInviteEmail(event.target.value)} placeholder="person@example.org" autoComplete="email" required /></label>
+                <button type="submit" disabled={inviting}>{inviting ? 'INVITING…' : 'INVITE MODERATOR'} <span>→</span></button>
+              </form>
+              {inviteError && <p className={s.organizationModeratorError} role="alert">{inviteError}</p>}
+              {inviteStatus && <p className={s.organizationModeratorSuccess} role="status">{inviteStatus}</p>}
+              <p className={cn(s.step, s.organizationModeratorCount)}>TEAM / {String(moderators.length).padStart(2, '0')}</p>
+              <ul className={s.organizationModeratorList}>
+                {moderators.map((moderator) => (
+                  <li key={moderator.membershipId}>
+                    <span className={s.organizationModeratorAvatar} aria-hidden="true">
+                      <span>{moderator.name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || '?'}</span>
+                      {moderator.image && <Image src={moderator.image} alt="" fill sizes="38px" unoptimized />}
+                    </span>
+                    <span className={s.organizationModeratorIdentity}>
+                      <strong>{moderator.name}{moderator.userId === session?.user.id ? ' · You' : ''}</strong>
+                      <small>{moderator.isOwner ? 'Creator' : 'Moderator'} · Tier {String(moderator.tier).padStart(2, '0')}</small>
+                      <small>{moderator.email}{moderator.invitedByName ? ` · Invited by ${moderator.invitedByName}` : ''}</small>
+                    </span>
+                    {moderator.canRemove && <button type="button" disabled={removingModeratorId === moderator.membershipId} onClick={() => void removeModerator(moderator)}>{removingModeratorId === moderator.membershipId ? 'REMOVING…' : 'REMOVE'}</button>}
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
           <Link className={s.settingsHeadingLink} href="/">← Back to the directory</Link>
         </div>
@@ -287,6 +387,23 @@ export function OrganizationSettings() {
           )}
         </div>
       </section>
+      {organization && !loadingOrganization && (
+        <section className={s.orgActionsSection} aria-labelledby="organization-settings-actions-title">
+          <div className={s.sectionHeading}>
+            <div>
+              <p className={s.eyebrow}><span /> YOUR ACTIONS / {String(actions.length).padStart(2, '0')}</p>
+              <h2 id="organization-settings-actions-title">Actions</h2>
+            </div>
+          </div>
+          <ActionList
+            actions={actions}
+            emptyMessage="No actions submitted yet."
+            includeIssue
+            linkMode="manage"
+            paginate
+          />
+        </section>
+      )}
       <SiteFooter />
     </main>
   );

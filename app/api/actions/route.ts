@@ -1,9 +1,10 @@
 import { and, eq } from 'drizzle-orm';
-import { actions, issues, orgs } from '@/db/schema';
+import { actions, issues } from '@/db/schema';
 import { analyzeActionHref } from '@/lib/action-metadata';
 import { db } from '@/lib/db';
 import { parseGovernmentActionFields } from '@/lib/government-action-context';
 import { getMemberSession } from '@/lib/member';
+import { getOrganizationMembership } from '@/lib/organization-membership';
 import { uniqueActionSlug } from '@/lib/slugs';
 
 const actionTypes = ['Petition', 'Lawsuit', 'Campaign'] as const;
@@ -12,10 +13,17 @@ export async function POST(request: Request) {
   const session = await getMemberSession();
   if (!session) return Response.json({ error: 'Sign in to submit an action.' }, { status: 401 });
 
-  const [organization] = await db.select().from(orgs).where(eq(orgs.ownerUserId, session.user.id)).limit(1);
-  if (!organization) return Response.json({ error: 'Create your organization before submitting an action.' }, { status: 403 });
-
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
+  const requestedOrganizationId = typeof body?.organizationId === 'number' ? body.organizationId : Number(body?.organizationId);
+  if (!Number.isSafeInteger(requestedOrganizationId) || requestedOrganizationId <= 0) {
+    return Response.json({ error: 'Choose an organization.' }, { status: 400 });
+  }
+  const organization = await getOrganizationMembership(
+    session.user.id,
+    requestedOrganizationId,
+  );
+  if (!organization) return Response.json({ error: 'Create or join an organization before submitting an action.' }, { status: 403 });
+
   const issueId = typeof body?.issueId === 'number' ? body.issueId : Number(body?.issueId);
   const type = typeof body?.type === 'string' ? body.type : '';
   const title = typeof body?.title === 'string' ? body.title.trim().replace(/\s+/g, ' ') : '';
@@ -48,7 +56,7 @@ export async function POST(request: Request) {
   try {
     const [action] = await db.insert(actions).values({
       issueId,
-      orgId: organization.id,
+      orgId: organization.organizationId,
       submittedByUserId: session.user.id,
       slug: await uniqueActionSlug(issueId, title),
       type: type as (typeof actionTypes)[number],

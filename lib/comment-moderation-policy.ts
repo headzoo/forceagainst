@@ -1,6 +1,6 @@
 export type ActionModerationOwnership = {
   submittedByUserId: string | null;
-  ownerUserId: string | null;
+  isOrganizationModerator: boolean;
 };
 
 export function resolveActionCommentModerationPermissions(
@@ -8,7 +8,7 @@ export function resolveActionCommentModerationPermissions(
   userId: string,
 ) {
   return {
-    canModerate: ownership.submittedByUserId === userId || ownership.ownerUserId === userId,
-    canBanOrganization: ownership.ownerUserId === userId,
+    canModerate: ownership.submittedByUserId === userId || ownership.isOrganizationModerator,
+    canBanOrganization: ownership.isOrganizationModerator,
   };
 }

@@ -52,7 +52,7 @@ export default function PrivacyPage() {
           <section id="information" className={s.legalSection}>
             <h2>Information We Collect</h2>
             <p>We collect information you provide directly, including account name, email address, password credentials, organization details, action submissions, contact form messages, and any other content you choose to send.</p>
-            <p>When you use account features, we may store session information, liked actions, submitted actions, organization ownership, IP address, user agent, and timestamps needed to operate and secure the service.</p>
+            <p>When you use account features, we may store session information, liked actions, submitted actions, organization ownership and moderator memberships, IP address, user agent, and timestamps needed to operate and secure the service.</p>
             <p>When you use site features, we may process search queries, action URLs submitted for review, representative lookup input, and similar request details. Contact form submissions are sent to our email service provider so we can receive and respond to them.</p>
             <p>We also collect limited technical and usage information through hosting logs, analytics, and performance tools, such as pages visited, device or browser details, referral information, approximate location derived from network data, and error or performance events.</p>
           </section>

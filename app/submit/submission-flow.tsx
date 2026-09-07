@@ -14,7 +14,8 @@ import {
 
 type IssueOption = { id: number; name: string; slug: string };
 type Organization = { id: number; name: string; website: string | null };
-type AccountContext = { organization: Organization | null; isAdmin: boolean };
+type OrganizationSummary = { id: number; name: string; isOwner: boolean };
+type AccountContext = { organization: Organization | null; organizations: OrganizationSummary[]; isAdmin: boolean };
 type Preview = {
   href: string;
   suggestedTitle: string;
@@ -42,6 +43,7 @@ export function SubmissionFlow({ issues }: { issues: IssueOption[] }) {
   const { data: session, isPending: sessionPending } = authClient.useSession();
   const [account, setAccount] = useState<AccountContext | null>(null);
   const [accountForUser, setAccountForUser] = useState('');
+  const [organizationId, setOrganizationId] = useState<number | null>(null);
   const [href, setHref] = useState('');
   const [preview, setPreview] = useState<Preview | null>(null);
   const [title, setTitle] = useState('');
@@ -64,6 +66,8 @@ export function SubmissionFlow({ issues }: { issues: IssueOption[] }) {
         if (!response.ok) throw new Error(String(data.error ?? 'Could not load your account.'));
         if (active) {
           setAccount(data as unknown as AccountContext);
+          const loadedAccount = data as unknown as AccountContext;
+          setOrganizationId(loadedAccount.organization?.id ?? null);
           setAccountForUser(session.user.id);
         }
       })
@@ -79,7 +83,7 @@ export function SubmissionFlow({ issues }: { issues: IssueOption[] }) {
     const response = await fetch('/api/actions/preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ href }),
+      body: JSON.stringify({ organizationId, href }),
     });
     const data = await responseJson(response);
     setWorking(false);
@@ -106,6 +110,7 @@ export function SubmissionFlow({ issues }: { issues: IssueOption[] }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         href,
+        organizationId,
         issueId: Number(form.get('issueId')),
         type: form.get('type'),
         title,
@@ -131,6 +136,9 @@ export function SubmissionFlow({ issues }: { issues: IssueOption[] }) {
   const loadingAccount = Boolean(session && accountForUser !== session.user.id);
   const needsOrganization = Boolean(session && !loadingAccount && account && !account.organization);
   const ready = Boolean(session && account?.organization);
+  const selectedOrganization = account?.organizations.find((organization) => organization.id === organizationId)
+    ?? account?.organization
+    ?? null;
 
   return (
     <main>
@@ -170,6 +178,9 @@ export function SubmissionFlow({ issues }: { issues: IssueOption[] }) {
               <p className={cn(s.step, s.submissionStep)}>STEP 01 / ACTION LINK</p>
               <h2>Where can people act?</h2>
               <p className={s.formIntro}>Start with the public page. We’ll read it securely on our server to suggest a title, slug, and effort.</p>
+              {account && account.organizations.length > 1 && (
+                <label>Organization<select value={organizationId ?? ''} onChange={(event) => setOrganizationId(Number(event.target.value))} required>{account.organizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name}{organization.isOwner ? ' — creator' : ''}</option>)}</select></label>
+              )}
               <label>Action URL<input name="href" type="url" value={href} onChange={(event) => setHref(event.target.value)} placeholder="https://example.org/take-action" required autoFocus /></label>
               {error && <p className={s.formError} role="alert">{error}</p>}
               <button className={s.formSubmit} type="submit" disabled={working}>{working ? 'READING PAGE…' : 'CONTINUE'} <span>→</span></button>
@@ -180,7 +191,7 @@ export function SubmissionFlow({ issues }: { issues: IssueOption[] }) {
             <form className={s.submissionForm} onSubmit={submitAction}>
               <p className={cn(s.step, s.submissionStep)}>STEP 02 / ACTION DETAILS</p>
               <div className={s.formTitleRow}><h2>Check the details.</h2><button type="button" onClick={() => { setPreview(null); setError(''); }}>Change link</button></div>
-              <p className={s.formIntro}>Submitting as <strong>{account?.organization?.name}</strong>. The final slug is generated automatically.</p>
+              <p className={s.formIntro}>Submitting as <strong>{selectedOrganization?.name}</strong>. The final slug is generated automatically.</p>
               <label>Action URL<input name="href" type="url" value={href} readOnly /></label>
               <div className={s.formGrid}>
                 <label>Type<select name="type" required defaultValue="Petition"><option>Petition</option><option>Lawsuit</option><option>Campaign</option></select></label>

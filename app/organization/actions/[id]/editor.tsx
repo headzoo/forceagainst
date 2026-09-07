@@ -120,7 +120,7 @@ export function ActionEditor({ actionId, issues }: { actionId: number; issues: I
 
         <div className={s.submissionPanel}>
           {(sessionPending || loading) && <div className={s.submissionStatus}><p className={s.submissionStatusCopy}>Loading action…</p></div>}
-          {!sessionPending && !session && <div className={s.submissionStatus}><p className={cn(s.step, s.submissionStep)}>ACCOUNT REQUIRED</p><h2>Sign in first.</h2><p className={s.submissionStatusCopy}>You need to sign in as this organization’s owner to edit its actions.</p><AuthControl /></div>}
+          {!sessionPending && !session && <div className={s.submissionStatus}><p className={cn(s.step, s.submissionStep)}>ACCOUNT REQUIRED</p><h2>Sign in first.</h2><p className={s.submissionStatusCopy}>You need to sign in as one of this organization’s moderators to edit its actions.</p><AuthControl /></div>}
           {!loading && session && error && !action && <div className={s.submissionStatus}><p className={cn(s.step, s.submissionStep)}>ACTION UNAVAILABLE</p><h2>Couldn’t open it.</h2><p className={s.submissionStatusCopy}>{error}</p><Link className={s.formSubmit} href="/organization">BACK TO ORGANIZATION <span>→</span></Link></div>}
           {session && action && (
             <form className={s.submissionForm} onSubmit={saveAction}>

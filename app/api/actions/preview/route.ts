@@ -1,17 +1,22 @@
-import { eq } from 'drizzle-orm';
-import { orgs } from '@/db/schema';
 import { analyzeActionHref, slugifyTitle } from '@/lib/action-metadata';
-import { db } from '@/lib/db';
 import { getMemberSession } from '@/lib/member';
+import { getOrganizationMembership } from '@/lib/organization-membership';
 
 export async function POST(request: Request) {
   const session = await getMemberSession();
   if (!session) return Response.json({ error: 'Sign in to analyze an action.' }, { status: 401 });
 
-  const [organization] = await db.select({ id: orgs.id }).from(orgs).where(eq(orgs.ownerUserId, session.user.id)).limit(1);
-  if (!organization) return Response.json({ error: 'Create your organization before submitting an action.' }, { status: 403 });
+  const body = await request.json().catch(() => null) as { organizationId?: unknown; href?: unknown } | null;
+  const requestedOrganizationId = typeof body?.organizationId === 'number' ? body.organizationId : Number(body?.organizationId);
+  if (!Number.isSafeInteger(requestedOrganizationId) || requestedOrganizationId <= 0) {
+    return Response.json({ error: 'Choose an organization.' }, { status: 400 });
+  }
+  const organization = await getOrganizationMembership(
+    session.user.id,
+    requestedOrganizationId,
+  );
+  if (!organization) return Response.json({ error: 'Create or join an organization before submitting an action.' }, { status: 403 });
 
-  const body = await request.json().catch(() => null) as { href?: unknown } | null;
   const href = typeof body?.href === 'string' ? body.href.trim() : '';
 
   try {

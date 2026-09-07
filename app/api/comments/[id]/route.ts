@@ -1,5 +1,5 @@
 import { and, eq, inArray, isNull } from 'drizzle-orm';
-import { actionComments, actions, commentModerationEvents, commentReports, orgs } from '@/db/schema';
+import { actionComments, actions, commentModerationEvents, commentReports, organizationMembers, orgs } from '@/db/schema';
 import { db } from '@/lib/db';
 import { getMemberSession } from '@/lib/member';
 
@@ -21,11 +21,15 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
     moderationStatus: actionComments.moderationStatus,
     deletedAt: actionComments.deletedAt,
     submittedByUserId: actions.submittedByUserId,
-    organizationOwnerUserId: orgs.ownerUserId,
+    moderatorMembershipId: organizationMembers.id,
   })
     .from(actionComments)
     .innerJoin(actions, eq(actionComments.actionId, actions.id))
     .innerJoin(orgs, eq(actions.orgId, orgs.id))
+    .leftJoin(organizationMembers, and(
+      eq(organizationMembers.organizationId, orgs.id),
+      eq(organizationMembers.userId, session.user.id),
+    ))
     .where(eq(actionComments.id, commentId))
     .limit(1);
 
@@ -36,7 +40,7 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
   const deletingOwnComment = comment.authorId === session.user.id;
   const moderatingComment = !deletingOwnComment && (
     comment.submittedByUserId === session.user.id
-    || comment.organizationOwnerUserId === session.user.id
+    || comment.moderatorMembershipId !== null
   );
   if (!deletingOwnComment && !moderatingComment) {
     return Response.json({ error: 'You can only delete your own comments unless you moderate this action.' }, { status: 403 });
