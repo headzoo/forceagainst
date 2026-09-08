@@ -260,6 +260,9 @@ export function SiteHeader({ showSubmitLink = true }: SiteHeaderProps) {
       </div>
       <div className={s.headerActions}>
         <AuthControl listenForSignInRequests />
+        <Link className={s.submitLink} href="/government">
+          Your government
+        </Link>
         {showSubmitLink && (
           <Link className={s.submitLink} href="/submit">
             <span className={s.submitLinkFull}>Submit an action</span>
