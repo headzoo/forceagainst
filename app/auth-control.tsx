@@ -7,6 +7,7 @@ import { authClient } from '@/lib/auth-client';
 import { OPEN_SIGN_IN_DIALOG_EVENT } from '@/lib/auth-dialog';
 import { normalizeUsername, USERNAME_MAX_LENGTH, USERNAME_MIN_LENGTH, usernameError } from '@/lib/username';
 import { TurnstileWidget } from '@/app/turnstile-widget';
+import { getFocusableElements, keepTabFocusInside } from '@/lib/focus-management';
 
 type AuthMode = 'sign-in' | 'sign-up' | 'recover-passkey';
 const developmentTurnstileSiteKey = '1x00000000000000000000AA';
@@ -26,17 +27,38 @@ export function AuthControl({ listenForSignInRequests = false }: { listenForSign
   const [recoveryContext, setRecoveryContext] = useState<string | null>(null);
   const ready = useSyncExternalStore(() => () => undefined, () => true, () => false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
   const titleId = useId();
 
   useEffect(() => {
     if (!open) return;
 
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusFrame = window.requestAnimationFrame(() => {
+      const preferred = dialogRef.current?.querySelector<HTMLElement>('input:not([disabled])');
+      (preferred ?? getFocusableElements(dialogRef.current)[0] ?? dialogRef.current)?.focus();
+    });
+
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setOpen(false);
+        return;
+      }
+      keepTabFocusInside(event, dialogRef.current);
     };
 
     document.addEventListener('keydown', closeOnEscape);
-    return () => document.removeEventListener('keydown', closeOnEscape);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', closeOnEscape);
+      const returnTarget = returnFocusRef.current;
+      if (returnTarget?.isConnected) window.requestAnimationFrame(() => returnTarget.focus());
+    };
   }, [open]);
 
   useEffect(() => {
@@ -46,7 +68,11 @@ export function AuthControl({ listenForSignInRequests = false }: { listenForSign
       if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
     };
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setMenuOpen(false);
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setMenuOpen(false);
+        menuTriggerRef.current?.focus();
+      }
     };
 
     document.addEventListener('pointerdown', closeMenu);
@@ -69,6 +95,7 @@ export function AuthControl({ listenForSignInRequests = false }: { listenForSign
   }, [session]);
 
   function showAuth(nextMode: AuthMode) {
+    returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setMode(nextMode);
     setError('');
     setRecoveryContext(null);
@@ -214,16 +241,45 @@ export function AuthControl({ listenForSignInRequests = false }: { listenForSign
     return (
       <div className={s.accountControl} ref={menuRef}>
         <button className={s.accountMenuTrigger}
+          ref={menuTriggerRef}
           type="button"
           aria-haspopup="menu"
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen((current) => !current)}
+          onKeyDown={(event) => {
+            if (event.key !== 'ArrowDown') return;
+            event.preventDefault();
+            setMenuOpen(true);
+            window.requestAnimationFrame(() => menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus());
+          }}
           title={session.user.email}
         >
           <span>{session.user.name}</span><b aria-hidden="true">⌄</b>
         </button>
         {menuOpen && (
-          <div className={s.accountMenu} role="menu">
+          <div
+            className={s.accountMenu}
+            role="menu"
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) setMenuOpen(false);
+            }}
+            onKeyDown={(event) => {
+              const items = getFocusableElements(event.currentTarget);
+              const index = items.indexOf(document.activeElement as HTMLElement);
+              if (event.key === 'Escape') {
+                event.preventDefault();
+                setMenuOpen(false);
+                menuTriggerRef.current?.focus();
+              } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                event.preventDefault();
+                const offset = event.key === 'ArrowDown' ? 1 : -1;
+                items[(index + offset + items.length) % items.length]?.focus();
+              } else if (event.key === 'Home' || event.key === 'End') {
+                event.preventDefault();
+                items[event.key === 'Home' ? 0 : items.length - 1]?.focus();
+              }
+            }}
+          >
             <Link className={s.accountMenuLiked} href="/liked" role="menuitem" onClick={() => setMenuOpen(false)}>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21.2l7.8-7.7 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>
               Liked
@@ -253,13 +309,13 @@ export function AuthControl({ listenForSignInRequests = false }: { listenForSign
       <button className={s.authTrigger} type="button" onClick={() => showAuth('sign-in')}>Sign in</button>
       {open && (
         <div className={s.authBackdrop} onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}>
-          <section className={s.authDialog} role="dialog" aria-modal="true" aria-labelledby={titleId}>
+          <section ref={dialogRef} className={s.authDialog} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={`${titleId}-description`} tabIndex={-1}>
             <button className={s.authClose} type="button" onClick={() => setOpen(false)} aria-label="Close account dialog">×</button>
             <p className={cn(s.eyebrow, s.authDialogEyebrow)}><span /> YOUR ACCOUNT</p>
             <h2 id={titleId}>
               {mode === 'sign-up' ? 'Join the force.' : mode === 'recover-passkey' ? 'Reset passkey.' : 'Welcome back.'}
             </h2>
-            <p className={s.authIntro}>
+            <p className={s.authIntro} id={`${titleId}-description`}>
               {mode === 'sign-up'
                 ? 'Create your account with an email and password.'
                 : mode === 'recover-passkey'

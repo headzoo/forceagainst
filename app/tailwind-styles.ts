@@ -24,6 +24,8 @@ export const s = {
   governmentBackLink: '!mb-[60px]',
   orgHeadingEyebrow: '!mb-[25px]',
   visuallyHidden: 'absolute -m-px h-px w-px overflow-hidden border-0 p-0 whitespace-nowrap [clip:rect(0,0,0,0)]',
+  skipLink: 'fixed top-3 left-3 z-[100] -translate-y-[calc(100%+24px)] border-2 border-ink bg-paper px-4 py-3 text-[12px] font-[950] tracking-[.08em] text-ink uppercase no-underline shadow-[4px_4px_0_var(--color-signal)] transition-transform focus:translate-y-0 focus:outline-3 focus:outline-offset-3 focus:outline-signal motion-reduce:transition-none',
+  mainContentStart: 'block scroll-mt-4 outline-none',
   backLink: 'mb-[65px] inline-block text-[10px] font-[950] tracking-[.08em] uppercase underline-offset-[5px] max-[780px]:mb-12',
   headingEndLockup: 'inline-flex items-center whitespace-nowrap align-baseline',
   headingEndStar: 'ml-[.12em] block size-[.74em] object-contain',

@@ -179,7 +179,16 @@ export function RepresentativeAddressForm({ onFound, autoFocus = false }: Repres
     <form className={s.governmentFinderForm} onSubmit={(event) => void handleSubmit(event)} noValidate>
       <label htmlFor={fieldId}>
         Street address
-        <div className={s.governmentAddressCombobox} ref={comboboxRef}>
+        <div
+          className={s.governmentAddressCombobox}
+          ref={comboboxRef}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) {
+              setOpen(false);
+              setActiveIndex(-1);
+            }
+          }}
+        >
           <input
             id={fieldId}
             name="address"
@@ -213,6 +222,7 @@ export function RepresentativeAddressForm({ onFound, autoFocus = false }: Repres
                   <button
                     id={`${listId}-option-${index}`}
                     type="button"
+                    tabIndex={-1}
                     role="option"
                     aria-selected={activeIndex === index}
                     className={activeIndex === index ? s.governmentAddressActive : undefined}
@@ -241,4 +251,3 @@ export function RepresentativeAddressForm({ onFound, autoFocus = false }: Repres
     </form>
   );
 }
-

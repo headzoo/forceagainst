@@ -137,11 +137,22 @@ export function SiteHeader({ showSubmitLink = true }: SiteHeaderProps) {
   }
 
   return (
+    <>
+    <a className={s.skipLink} href="#main-content">Skip to main content</a>
     <header className={s.siteHeader}>
       <Link className={cn(s.brand, s.headerBrand)} href="/" aria-label="Force Against home">
         <Image src={navbarLogo} alt="Force Against" priority unoptimized />
       </Link>
-      <div className={s.siteSearch} ref={rootRef}>
+      <div
+        className={s.siteSearch}
+        ref={rootRef}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) {
+            setOpen(false);
+            setActiveIndex(-1);
+          }
+        }}
+      >
         <button className={s.siteSearchToggle}
           type="button"
           aria-label="Search actions and organizations"
@@ -190,10 +201,10 @@ export function SiteHeader({ showSubmitLink = true }: SiteHeaderProps) {
           />
           {showPanel && (
             <div className={s.siteSearchPanel} id={listId} role="listbox">
-              {loading && <p className={s.siteSearchStatus}>Searching…</p>}
+              {loading && <p className={s.siteSearchStatus} role="status" aria-live="polite">Searching…</p>}
               {!loading && error && <p className={s.siteSearchStatus} role="alert">{error}</p>}
               {!loading && !error && results && flat.length === 0 && (
-                <p className={s.siteSearchStatus}>No published matches.</p>
+                <p className={s.siteSearchStatus} role="status">No published matches.</p>
               )}
               {!loading && !error && results && results.organizations.length > 0 && (
                 <div className={s.siteSearchGroup}>
@@ -205,6 +216,7 @@ export function SiteHeader({ showSubmitLink = true }: SiteHeaderProps) {
                         key={`org-${item.id}`}
                         id={`${listId}-option-${flatIndex}`}
                         type="button"
+                        tabIndex={-1}
                         role="option"
                         aria-selected={activeIndex === flatIndex}
                         className={activeIndex === flatIndex ? s.searchResultActive : undefined}
@@ -228,6 +240,7 @@ export function SiteHeader({ showSubmitLink = true }: SiteHeaderProps) {
                         key={`action-${item.id}`}
                         id={`${listId}-option-${flatIndex}`}
                         type="button"
+                        tabIndex={-1}
                         role="option"
                         aria-selected={activeIndex === flatIndex}
                         className={activeIndex === flatIndex ? s.searchResultActive : undefined}
@@ -255,5 +268,7 @@ export function SiteHeader({ showSubmitLink = true }: SiteHeaderProps) {
         )}
       </div>
     </header>
+    <span className={s.mainContentStart} id="main-content" tabIndex={-1} aria-label="Main content" />
+    </>
   );
 }

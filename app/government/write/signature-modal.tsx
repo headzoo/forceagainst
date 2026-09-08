@@ -63,6 +63,8 @@ export function SignatureModal({
 }: SignatureModalProps) {
   const dialogRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const typedTabRef = useRef<HTMLButtonElement>(null);
+  const drawnTabRef = useRef<HTMLButtonElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
   const pointerIdRef = useRef<number | null>(null);
@@ -169,6 +171,12 @@ export function SignatureModal({
     setError('');
   }
 
+  function selectMode(nextMode: 'typed' | 'drawn', focus = false) {
+    setMode(nextMode);
+    setError('');
+    if (focus) window.requestAnimationFrame(() => (nextMode === 'typed' ? typedTabRef : drawnTabRef).current?.focus());
+  }
+
   async function saveSignature() {
     setWorking(true);
     setError('');
@@ -219,11 +227,11 @@ export function SignatureModal({
 
   return (
     <div className={s.signatureOverlay} onMouseDown={(event) => { if (event.target === event.currentTarget && !working) onClose(); }}>
-      <section ref={dialogRef} className={s.signatureDialog} role="dialog" aria-modal="true" aria-labelledby="signature-modal-title">
+      <section ref={dialogRef} className={s.signatureDialog} role="dialog" aria-modal="true" aria-labelledby="signature-modal-title" aria-describedby="signature-modal-description" tabIndex={-1}>
         <button ref={closeRef} className={s.signatureClose} type="button" aria-label="Close signature dialog" disabled={working} onClick={onClose}>×</button>
         <p className={cn(s.eyebrow, s.signatureEyebrow)}><span /> YOUR SIGNATURE</p>
         <h2 id="signature-modal-title">{signature ? 'Manage your signature.' : 'Add your signature.'}</h2>
-        <p className={s.signatureIntro}>Type your name or draw with a mouse, finger, or stylus. Only the finished image is kept.</p>
+        <p className={s.signatureIntro} id="signature-modal-description">Type your name or draw with a mouse, finger, or stylus. Only the finished image is kept.</p>
 
         {signature && (
           <div className={s.signatureExisting}>
@@ -233,11 +241,11 @@ export function SignatureModal({
         )}
 
         <div className={s.signatureTabs} role="tablist" aria-label="Signature method">
-          <button className={mode === 'typed' ? s.signatureTabActive : undefined} type="button" role="tab" aria-selected={mode === 'typed'} onClick={() => { setMode('typed'); setError(''); }}>Type</button>
-          <button className={mode === 'drawn' ? s.signatureTabActive : undefined} type="button" role="tab" aria-selected={mode === 'drawn'} onClick={() => { setMode('drawn'); setError(''); }}>Draw</button>
+          <button ref={typedTabRef} id="signature-tab-typed" className={mode === 'typed' ? s.signatureTabActive : undefined} type="button" role="tab" aria-selected={mode === 'typed'} aria-controls="signature-panel" tabIndex={mode === 'typed' ? 0 : -1} onClick={() => selectMode('typed')} onKeyDown={(event) => { if (event.key === 'ArrowRight' || event.key === 'ArrowLeft' || event.key === 'Home' || event.key === 'End') { event.preventDefault(); selectMode(event.key === 'Home' ? 'typed' : event.key === 'End' ? 'drawn' : 'drawn', true); } }}>Type</button>
+          <button ref={drawnTabRef} id="signature-tab-drawn" className={mode === 'drawn' ? s.signatureTabActive : undefined} type="button" role="tab" aria-selected={mode === 'drawn'} aria-controls="signature-panel" tabIndex={mode === 'drawn' ? 0 : -1} onClick={() => selectMode('drawn')} onKeyDown={(event) => { if (event.key === 'ArrowRight' || event.key === 'ArrowLeft' || event.key === 'Home' || event.key === 'End') { event.preventDefault(); selectMode(event.key === 'End' ? 'drawn' : 'typed', true); } }}>Draw</button>
         </div>
 
-        <div className={s.signatureEditor}>
+        <div className={s.signatureEditor} id="signature-panel" role="tabpanel" aria-labelledby={mode === 'typed' ? 'signature-tab-typed' : 'signature-tab-drawn'}>
           {mode === 'typed' ? (
             <label className={s.signatureTypedLabel}>
               <span>Type your full name</span>

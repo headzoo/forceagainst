@@ -2,7 +2,7 @@
 
 import { cn, s } from '@/app/tailwind-styles';
 import Image from 'next/image';
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { AuthControl } from '@/app/auth-control';
 import {
   MAX_COMMENT_DEPTH,
@@ -13,6 +13,7 @@ import {
 } from '@/lib/action-comments';
 import { authClient } from '@/lib/auth-client';
 import type { CommentBanScopes } from '@/lib/comment-moderation';
+import { getFocusableElements, keepTabFocusInside } from '@/lib/focus-management';
 
 type CommentModeration = {
   canBanOrganization: boolean;
@@ -221,14 +222,42 @@ function CommentBanDialog({ target, organizationName, canBanOrganization, workin
 }) {
   const [banFromAction, setBanFromAction] = useState(true);
   const [banFromOrganization, setBanFromOrganization] = useState(false);
+  const dialogRef = useRef<HTMLElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const closeRef = useRef(onClose);
+  const workingRef = useRef(working);
 
   useEffect(() => {
+    closeRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    workingRef.current = working;
+  }, [working]);
+
+  useEffect(() => {
+    returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusFrame = window.requestAnimationFrame(() => getFocusableElements(dialogRef.current)[0]?.focus());
+
     function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape' && !working) onClose();
+      if (event.key === 'Escape' && !workingRef.current) {
+        event.preventDefault();
+        closeRef.current();
+        return;
+      }
+      keepTabFocusInside(event, dialogRef.current);
     }
     window.addEventListener('keydown', closeOnEscape);
-    return () => window.removeEventListener('keydown', closeOnEscape);
-  }, [onClose, working]);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', closeOnEscape);
+      const returnTarget = returnFocusRef.current;
+      if (returnTarget?.isConnected) window.requestAnimationFrame(() => returnTarget.focus());
+    };
+  }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -238,11 +267,11 @@ function CommentBanDialog({ target, organizationName, canBanOrganization, workin
 
   return (
     <div className={s.commentModerationOverlay} onMouseDown={(event) => { if (event.target === event.currentTarget && !working) onClose(); }}>
-      <section className={s.commentModerationDialog} role="dialog" aria-modal="true" aria-labelledby="comment-ban-title">
+      <section ref={dialogRef} className={s.commentModerationDialog} role="dialog" aria-modal="true" aria-labelledby="comment-ban-title" aria-describedby="comment-ban-description" tabIndex={-1}>
         <button className={s.commentModerationClose} type="button" aria-label="Close ban dialog" disabled={working} onClick={onClose}>×</button>
         <p className={cn(s.eyebrow, s.commentModerationEyebrow)}><span /> MODERATE USER</p>
         <h2 id="comment-ban-title">Ban @{target.username}?</h2>
-        <p>Choose where {target.name} should no longer be able to post or reply.</p>
+        <p id="comment-ban-description">Choose where {target.name} should no longer be able to post or reply.</p>
         <form onSubmit={(event) => void submit(event)}>
           <label className={s.commentModerationOption}>
             <input type="checkbox" checked={banFromAction} autoFocus onChange={(event) => setBanFromAction(event.target.checked)} />
